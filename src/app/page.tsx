@@ -170,9 +170,9 @@ export default async function HomePage() {
                 {haftaSonu.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {buHaftaninMaclari.map((mac: Mac) => (
-                <div key={mac.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div key={mac.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)] max-w-md">
                   <div className="text-green-200 text-xs mb-2 text-center">
                     {formatDate(mac.tarih)} · {mac.saat}
                   </div>
