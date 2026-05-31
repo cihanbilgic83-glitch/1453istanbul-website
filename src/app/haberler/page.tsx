@@ -7,7 +7,9 @@ export const metadata: Metadata = {
   description: 'Kulüpten son haberler ve duyurular.',
 };
 
-export default function HaberlerPage() {
-  const haberler = getHaberler();
+export const dynamic = 'force-dynamic';
+
+export default async function HaberlerPage() {
+  const haberler = await getHaberler();
   return <HaberlerClient haberler={haberler} />;
 }

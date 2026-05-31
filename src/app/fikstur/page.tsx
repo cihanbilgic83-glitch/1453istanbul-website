@@ -7,8 +7,9 @@ export const metadata: Metadata = {
   description: 'Maç takvimi, sonuçlar ve puan durumu.',
 };
 
-export default function FiksturPage() {
-  const maclar = getMaclar();
-  const puanTablosu = getPuanTablosu();
+export const dynamic = 'force-dynamic';
+
+export default async function FiksturPage() {
+  const [maclar, puanTablosu] = await Promise.all([getMaclar(), getPuanTablosu()]);
   return <FiksturClient maclar={maclar} puanTablosu={puanTablosu} />;
 }

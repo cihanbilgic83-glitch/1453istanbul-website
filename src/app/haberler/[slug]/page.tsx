@@ -4,25 +4,25 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getHaberler } from '@/lib/data';
 
-type Props = { params: Promise<{ slug: string }> };
+export const dynamic = 'force-dynamic';
 
-export async function generateStaticParams() {
-  return getHaberler().map((h) => ({ slug: h.slug }));
-}
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const haber = getHaberler().find((h) => h.slug === slug);
+  const haberler = await getHaberler();
+  const haber = haberler.find((h) => h.slug === slug);
   if (!haber) return { title: 'Haber Bulunamadı' };
   return { title: haber.baslik, description: haber.ozet };
 }
 
 export default async function HaberDetayPage({ params }: Props) {
   const { slug } = await params;
-  const haber = getHaberler().find((h) => h.slug === slug);
+  const haberler = await getHaberler();
+  const haber = haberler.find((h) => h.slug === slug);
   if (!haber) notFound();
 
-  const diger = getHaberler().filter((h) => h.slug !== slug).slice(0, 3);
+  const diger = haberler.filter((h) => h.slug !== slug).slice(0, 3);
   const formatDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
@@ -44,14 +44,12 @@ export default async function HaberDetayPage({ params }: Props) {
       <div className="h-1 bg-[#C0392B]" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        {/* Ana Görsel */}
         {haber.gorsel && (
           <div className="relative aspect-video rounded-xl overflow-hidden card-shadow mb-8">
             <Image src={haber.gorsel} alt={haber.baslik} fill className="object-cover" unoptimized />
           </div>
         )}
 
-        {/* İçerik */}
         <div className="bg-white rounded-xl card-shadow border border-gray-100 p-6 md:p-8 mb-10">
           <p className="text-gray-600 text-base leading-relaxed italic mb-6 pb-6 border-b border-gray-100">
             {haber.ozet}
@@ -63,7 +61,6 @@ export default async function HaberDetayPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Diğer Haberler */}
         {diger.length > 0 && (
           <div>
             <h2 className="text-xl font-bold text-gray-900 mb-5">

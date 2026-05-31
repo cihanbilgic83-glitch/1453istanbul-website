@@ -3,14 +3,14 @@ import { getHaberler, saveHaberler } from '@/lib/data';
 import { getSession } from '@/lib/session';
 
 export async function GET() {
-  return NextResponse.json(getHaberler());
+  return NextResponse.json(await getHaberler());
 }
 
 export async function PUT(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const data = await req.json();
-  saveHaberler(data);
+  await saveHaberler(data);
   return NextResponse.json({ success: true });
 }
 
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const yeniHaber = await req.json();
-  const haberler = getHaberler();
+  const haberler = await getHaberler();
   yeniHaber.id = Date.now().toString();
   if (!yeniHaber.slug) {
     yeniHaber.slug = yeniHaber.baslik
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       .replace(/[^a-z0-9-]/g, '');
   }
   haberler.unshift(yeniHaber);
-  saveHaberler(haberler);
+  await saveHaberler(haberler);
   return NextResponse.json(yeniHaber, { status: 201 });
 }
 
@@ -35,7 +35,7 @@ export async function DELETE(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await req.json();
-  const haberler = getHaberler().filter((h) => h.id !== id);
-  saveHaberler(haberler);
+  const haberler = (await getHaberler()).filter((h) => h.id !== id);
+  await saveHaberler(haberler);
   return NextResponse.json({ success: true });
 }

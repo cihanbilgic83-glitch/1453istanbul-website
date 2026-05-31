@@ -2,9 +2,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getSiteAyarlari } from '@/lib/data';
 
-export default function Footer() {
+export default async function Footer() {
   const year = new Date().getFullYear();
-  const ayarlar = getSiteAyarlari();
+  const ayarlar = await getSiteAyarlari();
   const { iletisim, sosyal_medya, footer_aciklama } = ayarlar;
 
   const sosyalMedya = [
@@ -28,10 +28,8 @@ export default function Footer() {
   return (
     <footer className="bg-[#1A4D2E] text-white mt-auto">
       <div className="h-1 bg-[#C0392B]" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Logo & Hakkında */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 bg-white rounded-full p-1 shadow-md">
@@ -43,7 +41,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-green-100 text-sm leading-relaxed">
-              {footer_aciklama || '1453 İstanbul AS Spor Kulübü, İstanbul\'un fethinden ilham alan güçlü bir futbol geleneğini yaşatmaktadır.'}
+              {footer_aciklama || "1453 İstanbul AS Spor Kulübü, İstanbul'un fethinden ilham alan güçlü bir futbol geleneğini yaşatmaktadır."}
             </p>
             {sosyalMedya.length > 0 && (
               <div className="flex gap-3">
@@ -60,11 +58,8 @@ export default function Footer() {
             )}
           </div>
 
-          {/* Hızlı Linkler */}
           <div>
-            <h3 className="text-[#D4AF37] font-semibold mb-4 text-sm uppercase tracking-wider">
-              Hızlı Linkler
-            </h3>
+            <h3 className="text-[#D4AF37] font-semibold mb-4 text-sm uppercase tracking-wider">Hızlı Linkler</h3>
             <ul className="space-y-2">
               {[
                 { href: '/', label: 'Anasayfa' },
@@ -85,11 +80,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* İletişim */}
           <div>
-            <h3 className="text-[#D4AF37] font-semibold mb-4 text-sm uppercase tracking-wider">
-              İletişim
-            </h3>
+            <h3 className="text-[#D4AF37] font-semibold mb-4 text-sm uppercase tracking-wider">İletişim</h3>
             <ul className="space-y-3 text-sm text-green-100">
               {iletisim.adres && (
                 <li className="flex items-start gap-2">
@@ -105,9 +97,7 @@ export default function Footer() {
                   <svg className="w-4 h-4 text-[#C0392B] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <a href={`mailto:${iletisim.email}`} className="hover:text-[#D4AF37] transition-colors">
-                    {iletisim.email}
-                  </a>
+                  <a href={`mailto:${iletisim.email}`} className="hover:text-[#D4AF37] transition-colors">{iletisim.email}</a>
                 </li>
               )}
               {iletisim.telefon && (
@@ -115,9 +105,7 @@ export default function Footer() {
                   <svg className="w-4 h-4 text-[#C0392B] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
-                  <a href={`tel:${iletisim.telefon.replace(/\s/g, '')}`} className="hover:text-[#D4AF37] transition-colors">
-                    {iletisim.telefon}
-                  </a>
+                  <a href={`tel:${iletisim.telefon.replace(/\s/g, '')}`} className="hover:text-[#D4AF37] transition-colors">{iletisim.telefon}</a>
                 </li>
               )}
             </ul>

@@ -1,90 +1,112 @@
+import { Redis } from '@upstash/redis';
 import fs from 'fs';
 import path from 'path';
 import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj } from './types';
 
+// Redis istemcisi
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
 const dataDir = path.join(process.cwd(), 'data');
 
-function readJSON<T>(filename: string): T[] {
-  const filePath = path.join(dataDir, filename);
+// JSON dosyasından oku (fallback/seed için)
+function readJSONFile<T>(filename: string): T[] {
   try {
-    const raw = fs.readFileSync(filePath, 'utf-8');
+    const raw = fs.readFileSync(path.join(dataDir, filename), 'utf-8');
     return JSON.parse(raw) as T[];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-function readJSONObj<T>(filename: string, defaultVal: T): T {
-  const filePath = path.join(dataDir, filename);
+function readJSONObjFile<T>(filename: string, defaultVal: T): T {
   try {
-    const raw = fs.readFileSync(filePath, 'utf-8');
+    const raw = fs.readFileSync(path.join(dataDir, filename), 'utf-8');
     return JSON.parse(raw) as T;
+  } catch { return defaultVal; }
+}
+
+// Redis'ten liste oku — boşsa JSON'dan seed et
+async function getList<T>(key: string, jsonFile: string): Promise<T[]> {
+  try {
+    const data = await redis.get<T[]>(key);
+    if (data !== null && data !== undefined) return data;
+    // İlk kullanım: JSON'dan yükle
+    const fromFile = readJSONFile<T>(jsonFile);
+    if (fromFile.length > 0) await redis.set(key, fromFile);
+    return fromFile;
   } catch {
-    return defaultVal;
+    return readJSONFile<T>(jsonFile);
   }
 }
 
-function writeJSON<T>(filename: string, data: T[]): void {
-  const filePath = path.join(dataDir, filename);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+// Redis'ten obje oku — boşsa JSON'dan seed et
+async function getObj<T>(key: string, jsonFile: string, defaultVal: T): Promise<T> {
+  try {
+    const data = await redis.get<T>(key);
+    if (data !== null && data !== undefined) return data;
+    const fromFile = readJSONObjFile<T>(jsonFile, defaultVal);
+    await redis.set(key, fromFile);
+    return fromFile;
+  } catch {
+    return readJSONObjFile<T>(jsonFile, defaultVal);
+  }
 }
 
-function writeJSONObj<T>(filename: string, data: T): void {
-  const filePath = path.join(dataDir, filename);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+// Redis'e kaydet
+async function setList<T>(key: string, data: T[]): Promise<void> {
+  await redis.set(key, data);
+}
+
+async function setObj<T>(key: string, data: T): Promise<void> {
+  await redis.set(key, data);
 }
 
 // ---- MAÇLAR ----
-export function getMaclar(): Mac[] {
-  return readJSON<Mac>('maclar.json');
+export async function getMaclar(): Promise<Mac[]> {
+  return getList<Mac>('maclar', 'maclar.json');
 }
-
-export function saveMaclar(data: Mac[]): void {
-  writeJSON('maclar.json', data);
+export async function saveMaclar(data: Mac[]): Promise<void> {
+  await setList('maclar', data);
 }
 
 // ---- HABERLER ----
-export function getHaberler(): Haber[] {
-  return readJSON<Haber>('haberler.json');
+export async function getHaberler(): Promise<Haber[]> {
+  return getList<Haber>('haberler', 'haberler.json');
 }
-
-export function getHaberBySlug(slug: string): Haber | undefined {
-  return getHaberler().find((h) => h.slug === slug);
+export async function getHaberBySlug(slug: string): Promise<Haber | undefined> {
+  const haberler = await getHaberler();
+  return haberler.find((h) => h.slug === slug);
 }
-
-export function saveHaberler(data: Haber[]): void {
-  writeJSON('haberler.json', data);
+export async function saveHaberler(data: Haber[]): Promise<void> {
+  await setList('haberler', data);
 }
 
 // ---- PUAN TABLOSU ----
-export function getPuanTablosu(): PuanTablosu[] {
-  return readJSON<PuanTablosu>('puan-tablosu.json');
+export async function getPuanTablosu(): Promise<PuanTablosu[]> {
+  return getList<PuanTablosu>('puan-tablosu', 'puan-tablosu.json');
 }
-
-export function savePuanTablosu(data: PuanTablosu[]): void {
-  writeJSON('puan-tablosu.json', data);
+export async function savePuanTablosu(data: PuanTablosu[]): Promise<void> {
+  await setList('puan-tablosu', data);
 }
 
 // ---- GALERİ ----
-export function getGaleri(): GaleriOge[] {
-  return readJSON<GaleriOge>('galeri.json');
+export async function getGaleri(): Promise<GaleriOge[]> {
+  return getList<GaleriOge>('galeri', 'galeri.json');
 }
-
-export function saveGaleri(data: GaleriOge[]): void {
-  writeJSON('galeri.json', data);
+export async function saveGaleri(data: GaleriOge[]): Promise<void> {
+  await setList('galeri', data);
 }
 
 // ---- MESAJLAR ----
-export function getMesajlar(): Mesaj[] {
-  return readJSON<Mesaj>('mesajlar.json');
+export async function getMesajlar(): Promise<Mesaj[]> {
+  return getList<Mesaj>('mesajlar', 'mesajlar.json');
 }
-
-export function saveMesajlar(data: Mesaj[]): void {
-  writeJSON('mesajlar.json', data);
+export async function saveMesajlar(data: Mesaj[]): Promise<void> {
+  await setList('mesajlar', data);
 }
-
-export function addMesaj(mesaj: Omit<Mesaj, 'id' | 'tarih' | 'okundu'>): Mesaj {
-  const mesajlar = getMesajlar();
+export async function addMesaj(mesaj: Omit<Mesaj, 'id' | 'tarih' | 'okundu'>): Promise<Mesaj> {
+  const mesajlar = await getMesajlar();
   const yeni: Mesaj = {
     ...mesaj,
     id: Date.now().toString(),
@@ -92,7 +114,7 @@ export function addMesaj(mesaj: Omit<Mesaj, 'id' | 'tarih' | 'okundu'>): Mesaj {
     okundu: false,
   };
   mesajlar.unshift(yeni);
-  saveMesajlar(mesajlar);
+  await saveMesajlar(mesajlar);
   return yeni;
 }
 
@@ -123,12 +145,11 @@ const defaultAyarlar: SiteAyarlari = {
   tarihce: [],
 };
 
-export function getSiteAyarlari(): SiteAyarlari {
-  return readJSONObj<SiteAyarlari>('site-ayarlari.json', defaultAyarlar);
+export async function getSiteAyarlari(): Promise<SiteAyarlari> {
+  return getObj<SiteAyarlari>('site-ayarlari', 'site-ayarlari.json', defaultAyarlar);
 }
-
-export function saveSiteAyarlari(data: SiteAyarlari): void {
-  writeJSONObj('site-ayarlari.json', data);
+export async function saveSiteAyarlari(data: SiteAyarlari): Promise<void> {
+  await setObj('site-ayarlari', data);
 }
 
 // ---- YÖNETİM KURULU ----
@@ -138,13 +159,11 @@ export interface YonetimUye {
   gorev: string;
   gorsel: string;
 }
-
-export function getYonetim(): YonetimUye[] {
-  return readJSON<YonetimUye>('yonetim.json');
+export async function getYonetim(): Promise<YonetimUye[]> {
+  return getList<YonetimUye>('yonetim', 'yonetim.json');
 }
-
-export function saveYonetim(data: YonetimUye[]): void {
-  writeJSON('yonetim.json', data);
+export async function saveYonetim(data: YonetimUye[]): Promise<void> {
+  await setList('yonetim', data);
 }
 
 // ---- SPONSORLAR ----
@@ -155,11 +174,9 @@ export interface Sponsor {
   web: string;
   kategori: string;
 }
-
-export function getSponsorlar(): Sponsor[] {
-  return readJSON<Sponsor>('sponsorlar.json');
+export async function getSponsorlar(): Promise<Sponsor[]> {
+  return getList<Sponsor>('sponsorlar', 'sponsorlar.json');
 }
-
-export function saveSponsorlar(data: Sponsor[]): void {
-  writeJSON('sponsorlar.json', data);
+export async function saveSponsorlar(data: Sponsor[]): Promise<void> {
+  await setList('sponsorlar', data);
 }

@@ -13,4 +13,10 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      - key: IMGBB_API_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
     healthCheckPath: /api/health

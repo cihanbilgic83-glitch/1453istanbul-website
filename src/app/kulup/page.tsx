@@ -9,9 +9,8 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default function KulupPage() {
-  const ayarlar = getSiteAyarlari();
-  const yonetim = getYonetim();
+export default async function KulupPage() {
+  const [ayarlar, yonetim] = await Promise.all([getSiteAyarlari(), getYonetim()]);
 
   return (
     <div className="pt-20 bg-[#f8f9fa] min-h-screen">
@@ -38,7 +37,7 @@ export default function KulupPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Vizyonumuz</h3>
-              <p className="text-gray-600 leading-relaxed">{ayarlar.vizyon}</p>
+              <p className="text-gray-600 leading-relaxed">{ayarlar.vizyon || 'Vizyon bilgisi henüz eklenmedi.'}</p>
             </div>
             <div className="bg-[#f8f9fa] rounded-2xl p-8 border border-gray-100">
               <div className="w-12 h-12 bg-[#C0392B] rounded-xl flex items-center justify-center mb-4">
@@ -47,7 +46,7 @@ export default function KulupPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Misyonumuz</h3>
-              <p className="text-gray-600 leading-relaxed">{ayarlar.misyon}</p>
+              <p className="text-gray-600 leading-relaxed">{ayarlar.misyon || 'Misyon bilgisi henüz eklenmedi.'}</p>
             </div>
           </div>
         </div>

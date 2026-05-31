@@ -9,12 +9,11 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default function IletisimPage() {
-  const ayarlar = getSiteAyarlari();
+export default async function IletisimPage() {
+  const ayarlar = await getSiteAyarlari();
 
   return (
     <div className="pt-20 bg-[#f8f9fa] min-h-screen">
-      {/* Banner */}
       <div className="bg-[#1A4D2E] py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-4xl font-black text-white mb-2">
@@ -24,7 +23,6 @@ export default function IletisimPage() {
         </div>
       </div>
       <div className="h-1 bg-[#C0392B]" />
-
       <IletisimClient ayarlar={ayarlar} />
     </div>
   );

@@ -6,7 +6,9 @@ export const metadata = {
   description: 'Maçlar, etkinlikler ve özel anlar.',
 };
 
-export default function GaleriPage() {
-  const galeri = getGaleri();
+export const dynamic = 'force-dynamic';
+
+export default async function GaleriPage() {
+  const galeri = await getGaleri();
   return <GaleriClient galeri={galeri} />;
 }

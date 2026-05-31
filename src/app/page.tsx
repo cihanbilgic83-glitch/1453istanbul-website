@@ -48,11 +48,15 @@ function MacKarti({ mac }: { mac: Mac }) {
 }
 
 export default async function HomePage() {
-  const maclar = getMaclar();
-  const haberler = getHaberler().slice(0, 3);
-  const puanTablosu = getPuanTablosu().slice(0, 5);
-  const ayarlar = getSiteAyarlari();
-  const sponsorlar = getSponsorlar();
+  const [maclar, haberlerAll, puanAll, ayarlar, sponsorlar] = await Promise.all([
+    getMaclar(),
+    getHaberler(),
+    getPuanTablosu(),
+    getSiteAyarlari(),
+    getSponsorlar(),
+  ]);
+  const haberler = haberlerAll.slice(0, 3);
+  const puanTablosu = puanAll.slice(0, 5);
 
   const sonMac = maclar
     .filter((m: Mac) => m.durum === 'tamamlandi')
@@ -62,8 +66,8 @@ export default async function HomePage() {
     .filter((m: Mac) => m.durum === 'gelecek')
     .sort((a: Mac, b: Mac) => new Date(a.tarih).getTime() - new Date(b.tarih).getTime())[0];
 
-  const bizimSira = getPuanTablosu().findIndex((t: PuanTablosu) => t.takim === '1453 İstanbul AS') + 1;
-  const bizimPuan = getPuanTablosu().find((t: PuanTablosu) => t.takim === '1453 İstanbul AS');
+  const bizimSira = puanAll.findIndex((t: PuanTablosu) => t.takim === '1453 İstanbul AS') + 1;
+  const bizimPuan = puanAll.find((t: PuanTablosu) => t.takim === '1453 İstanbul AS');
 
   // Bu haftanın maçları
   const bugun = new Date();
