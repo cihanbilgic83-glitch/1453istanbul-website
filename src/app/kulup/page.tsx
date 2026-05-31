@@ -15,7 +15,7 @@ const tarihceMaddeleri = [
 ];
 
 const yonetimKurulu = [
-  { isim: 'Mehmet Yıldırım', gorev: 'Kulüp Başkanı', gorsel: 'https://picsum.photos/seed/baskan1453/200/200' },
+  { isim: 'Cihan Bilgiç', gorev: 'Kulüp Başkanı', gorsel: 'https://picsum.photos/seed/baskan1453/200/200' },
   { isim: 'Ali Kaya', gorev: 'Genel Sekreter', gorsel: 'https://picsum.photos/seed/yonetim1/200/200' },
   { isim: 'Fatma Demir', gorev: 'Mali İşler', gorsel: 'https://picsum.photos/seed/yonetim2/200/200' },
   { isim: 'Hasan Çelik', gorev: 'Teknik Direktör', gorsel: 'https://picsum.photos/seed/yonetim3/200/200' },
@@ -119,7 +119,7 @@ export default function KulupPage() {
                 geleceğe taşımak en büyük önceliğimizdir. Desteklerinizle daha güçlü büyüyoruz.&rdquo;
               </blockquote>
               <div>
-                <div className="font-bold text-gray-900">Mehmet Yıldırım</div>
+                <div className="font-bold text-gray-900">Cihan Bilgiç</div>
                 <div className="text-[#1A4D2E] text-sm font-medium">Kulüp Başkanı</div>
               </div>
             </div>
