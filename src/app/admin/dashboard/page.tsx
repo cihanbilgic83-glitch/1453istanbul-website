@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj } from '@/lib/types';
+import type { SiteAyarlari, YonetimUye, Sponsor } from '@/lib/data';
 
-type Sekme = 'maclar' | 'haberler' | 'puan' | 'galeri' | 'mesajlar';
+type Sekme = 'maclar' | 'haberler' | 'puan' | 'galeri' | 'mesajlar' | 'siteayarlari' | 'yonetim' | 'sponsorlar';
 
 // ===== MODAL =====
 function Modal({ baslik, onKapat, children }: { baslik: string; onKapat: () => void; children: React.ReactNode }) {
@@ -50,10 +51,8 @@ function FT({ label, required, ...props }: { label: string; required?: boolean }
   );
 }
 
-// ===== GÖRSEL YÜKLEME BİLEŞENİ =====
-function GorselYukle({ value, onChange, label = 'Görsel' }: {
-  value: string; onChange: (url: string) => void; label?: string;
-}) {
+// ===== GÖRSEL YÜKLEME =====
+function GorselYukle({ value, onChange, label = 'Görsel' }: { value: string; onChange: (url: string) => void; label?: string }) {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [hata, setHata] = useState('');
 
@@ -61,66 +60,37 @@ function GorselYukle({ value, onChange, label = 'Görsel' }: {
     const dosya = e.target.files?.[0];
     if (!dosya) return;
     if (dosya.size > 10 * 1024 * 1024) { setHata('Dosya 10MB\'dan büyük olamaz.'); return; }
-    setHata('');
-    setYukleniyor(true);
+    setHata(''); setYukleniyor(true);
     try {
       const fd = new FormData();
       fd.append('image', dosya);
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       const data = await res.json();
-      if (data.url) {
-        onChange(data.url);
-      } else {
-        setHata(data.error || 'Yükleme başarısız.');
-      }
-    } catch {
-      setHata('Bağlantı hatası.');
-    } finally {
-      setYukleniyor(false);
-      e.target.value = '';
-    }
+      if (data.url) { onChange(data.url); } else { setHata(data.error || 'Yükleme başarısız.'); }
+    } catch { setHata('Bağlantı hatası.'); }
+    finally { setYukleniyor(false); e.target.value = ''; }
   };
 
   return (
     <div>
       <label className="block text-xs text-gray-500 mb-1.5 font-medium">{label}</label>
       <div className="space-y-2">
-        {/* Dosya yükleme butonu */}
-        <label className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl border-2 border-dashed transition-colors w-full ${
-          yukleniyor ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-[#1A4D2E]/30 bg-[#f8f9fa] hover:border-[#1A4D2E] hover:bg-green-50/30'
-        }`}>
+        <label className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl border-2 border-dashed transition-colors w-full ${yukleniyor ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-[#1A4D2E]/30 bg-[#f8f9fa] hover:border-[#1A4D2E]'}`}>
           <input type="file" accept="image/*" onChange={dosyaSec} disabled={yukleniyor} className="hidden" />
           {yukleniyor ? (
-            <>
-              <div className="w-4 h-4 border-2 border-[#1A4D2E] border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-gray-500">ImgBB&apos;ye yükleniyor...</span>
-            </>
+            <><div className="w-4 h-4 border-2 border-[#1A4D2E] border-t-transparent rounded-full animate-spin" /><span className="text-xs text-gray-500">Yükleniyor...</span></>
           ) : (
-            <>
-              <svg className="w-4 h-4 text-[#1A4D2E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+            <><svg className="w-4 h-4 text-[#1A4D2E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               <span className="text-xs text-[#1A4D2E] font-medium">{value ? 'Değiştir' : 'Dosya Seç'}</span>
-              <span className="text-xs text-gray-400 ml-auto">JPG, PNG, GIF · maks 10MB</span>
-            </>
+              <span className="text-xs text-gray-400 ml-auto">JPG, PNG · maks 10MB</span></>
           )}
         </label>
-
-        {/* URL alanı (manuel giriş alternatifi) */}
-        <input value={value} onChange={e => onChange(e.target.value)}
-          className="w-full bg-[#f8f9fa] border border-gray-200 rounded-xl px-3 py-2 text-gray-700 text-xs placeholder-gray-400"
-          placeholder="veya URL yapıştır: https://..." />
-
+        <input value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#f8f9fa] border border-gray-200 rounded-xl px-3 py-2 text-gray-700 text-xs placeholder-gray-400" placeholder="veya URL yapıştır: https://..." />
         {hata && <p className="text-red-500 text-xs">{hata}</p>}
-
-        {/* Önizleme */}
         {value && (
           <div className="relative h-28 rounded-xl overflow-hidden border border-gray-200">
             <Image src={value} alt="Önizleme" fill className="object-cover" unoptimized />
-            <button type="button" onClick={() => onChange('')}
-              className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors">
-              ×
-            </button>
+            <button type="button" onClick={() => onChange('')} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors">×</button>
           </div>
         )}
       </div>
@@ -132,14 +102,10 @@ function GorselYukle({ value, onChange, label = 'Görsel' }: {
 type OlayItem = { oyuncu: string; dakika: number; takim: string };
 type KartItem = { oyuncu: string; dakika: number; takim: string; tur: 'sari' | 'kirmizi' };
 
-function OlayListesi({ baslik, liste, takimlar, onChange }: {
-  baslik: string; liste: OlayItem[]; takimlar: [string, string]; onChange: (l: OlayItem[]) => void;
-}) {
+function OlayListesi({ baslik, liste, takimlar, onChange }: { baslik: string; liste: OlayItem[]; takimlar: [string, string]; onChange: (l: OlayItem[]) => void }) {
   const ekle = () => onChange([...liste, { oyuncu: '', dakika: 1, takim: takimlar[0] }]);
   const sil = (i: number) => onChange(liste.filter((_, idx) => idx !== i));
-  const guncelle = (i: number, k: keyof OlayItem, v: string | number) => {
-    const y = [...liste]; y[i] = { ...y[i], [k]: v }; onChange(y);
-  };
+  const guncelle = (i: number, k: keyof OlayItem, v: string | number) => { const y = [...liste]; y[i] = { ...y[i], [k]: v }; onChange(y); };
   return (
     <div className="bg-[#f8f9fa] rounded-xl p-3 border border-gray-200">
       <div className="flex items-center justify-between mb-2">
@@ -148,24 +114,10 @@ function OlayListesi({ baslik, liste, takimlar, onChange }: {
       </div>
       {liste.map((o, i) => (
         <div key={i} className="grid grid-cols-12 gap-1.5 mb-2 items-center">
-          <div className="col-span-1">
-            <input type="number" min="1" max="120" value={o.dakika} onChange={e => guncelle(i, 'dakika', Number(e.target.value))}
-              className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-center text-gray-900" placeholder="dk" />
-          </div>
-          <div className="col-span-5">
-            <input value={o.oyuncu} onChange={e => guncelle(i, 'oyuncu', e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-900" placeholder="Oyuncu adı" />
-          </div>
-          <div className="col-span-5">
-            <select value={o.takim} onChange={e => guncelle(i, 'takim', e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-gray-900">
-              <option value={takimlar[0]}>{takimlar[0].split(' ').slice(0,2).join(' ')}</option>
-              <option value={takimlar[1]}>{takimlar[1].split(' ').slice(0,2).join(' ')}</option>
-            </select>
-          </div>
-          <div className="col-span-1">
-            <button type="button" onClick={() => sil(i)} className="w-full text-red-400 hover:text-red-600 text-sm font-bold">×</button>
-          </div>
+          <div className="col-span-1"><input type="number" min="1" max="120" value={o.dakika} onChange={e => guncelle(i, 'dakika', Number(e.target.value))} className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-center text-gray-900" placeholder="dk" /></div>
+          <div className="col-span-5"><input value={o.oyuncu} onChange={e => guncelle(i, 'oyuncu', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-900" placeholder="Oyuncu adı" /></div>
+          <div className="col-span-5"><select value={o.takim} onChange={e => guncelle(i, 'takim', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-gray-900"><option value={takimlar[0]}>{takimlar[0].split(' ').slice(0,2).join(' ')}</option><option value={takimlar[1]}>{takimlar[1].split(' ').slice(0,2).join(' ')}</option></select></div>
+          <div className="col-span-1"><button type="button" onClick={() => sil(i)} className="w-full text-red-400 hover:text-red-600 text-sm font-bold">×</button></div>
         </div>
       ))}
       {liste.length === 0 && <p className="text-xs text-gray-400 text-center py-1">Kayıt yok</p>}
@@ -173,14 +125,10 @@ function OlayListesi({ baslik, liste, takimlar, onChange }: {
   );
 }
 
-function KartListesi({ liste, takimlar, onChange }: {
-  liste: KartItem[]; takimlar: [string, string]; onChange: (l: KartItem[]) => void;
-}) {
+function KartListesi({ liste, takimlar, onChange }: { liste: KartItem[]; takimlar: [string, string]; onChange: (l: KartItem[]) => void }) {
   const ekle = () => onChange([...liste, { oyuncu: '', dakika: 1, takim: takimlar[0], tur: 'sari' }]);
   const sil = (i: number) => onChange(liste.filter((_, idx) => idx !== i));
-  const guncelle = (i: number, k: keyof KartItem, v: string | number) => {
-    const y = [...liste]; y[i] = { ...y[i], [k]: v }; onChange(y);
-  };
+  const guncelle = (i: number, k: keyof KartItem, v: string | number) => { const y = [...liste]; y[i] = { ...y[i], [k]: v }; onChange(y); };
   return (
     <div className="bg-[#f8f9fa] rounded-xl p-3 border border-gray-200">
       <div className="flex items-center justify-between mb-2">
@@ -189,31 +137,11 @@ function KartListesi({ liste, takimlar, onChange }: {
       </div>
       {liste.map((k, i) => (
         <div key={i} className="grid grid-cols-12 gap-1.5 mb-2 items-center">
-          <div className="col-span-1">
-            <input type="number" min="1" max="120" value={k.dakika} onChange={e => guncelle(i, 'dakika', Number(e.target.value))}
-              className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-center text-gray-900" placeholder="dk" />
-          </div>
-          <div className="col-span-4">
-            <input value={k.oyuncu} onChange={e => guncelle(i, 'oyuncu', e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-900" placeholder="Oyuncu adı" />
-          </div>
-          <div className="col-span-3">
-            <select value={k.takim} onChange={e => guncelle(i, 'takim', e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-gray-900">
-              <option value={takimlar[0]}>{takimlar[0].split(' ').slice(0,2).join(' ')}</option>
-              <option value={takimlar[1]}>{takimlar[1].split(' ').slice(0,2).join(' ')}</option>
-            </select>
-          </div>
-          <div className="col-span-3">
-            <select value={k.tur} onChange={e => guncelle(i, 'tur', e.target.value)}
-              className={`w-full border rounded px-1.5 py-1.5 text-xs font-bold ${k.tur === 'sari' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' : 'bg-red-100 text-red-700 border-red-300'}`}>
-              <option value="sari">Sarı</option>
-              <option value="kirmizi">Kırmızı</option>
-            </select>
-          </div>
-          <div className="col-span-1">
-            <button type="button" onClick={() => sil(i)} className="w-full text-red-400 hover:text-red-600 text-sm font-bold">×</button>
-          </div>
+          <div className="col-span-1"><input type="number" min="1" max="120" value={k.dakika} onChange={e => guncelle(i, 'dakika', Number(e.target.value))} className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-center text-gray-900" placeholder="dk" /></div>
+          <div className="col-span-4"><input value={k.oyuncu} onChange={e => guncelle(i, 'oyuncu', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-900" placeholder="Oyuncu adı" /></div>
+          <div className="col-span-3"><select value={k.takim} onChange={e => guncelle(i, 'takim', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-gray-900"><option value={takimlar[0]}>{takimlar[0].split(' ').slice(0,2).join(' ')}</option><option value={takimlar[1]}>{takimlar[1].split(' ').slice(0,2).join(' ')}</option></select></div>
+          <div className="col-span-3"><select value={k.tur} onChange={e => guncelle(i, 'tur', e.target.value)} className={`w-full border rounded px-1.5 py-1.5 text-xs font-bold ${k.tur === 'sari' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' : 'bg-red-100 text-red-700 border-red-300'}`}><option value="sari">Sarı</option><option value="kirmizi">Kırmızı</option></select></div>
+          <div className="col-span-1"><button type="button" onClick={() => sil(i)} className="w-full text-red-400 hover:text-red-600 text-sm font-bold">×</button></div>
         </div>
       ))}
       {liste.length === 0 && <p className="text-xs text-gray-400 text-center py-1">Kayıt yok</p>}
@@ -248,26 +176,18 @@ function MacForm({ mac, onKaydet, onKapat }: { mac?: Mac; onKaydet: (d: Partial<
             <FI label="Ev Sahibi Gol" type="number" min="0" value={form.ev_gol ?? ''} onChange={e => set('ev_gol', e.target.value === '' ? null : Number(e.target.value))} />
             <FI label="Misafir Gol" type="number" min="0" value={form.mis_gol ?? ''} onChange={e => set('mis_gol', e.target.value === '' ? null : Number(e.target.value))} />
           </div>
-          <div className="border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Maç Detayları</p>
-            <div className="space-y-3">
-              <OlayListesi baslik="⚽ Goller" liste={(form.goller as OlayItem[]) || []} takimlar={takimlar}
-                onChange={l => set('goller', l)} />
-              <OlayListesi baslik="🅰 Asistler" liste={(form.asistler as OlayItem[]) || []} takimlar={takimlar}
-                onChange={l => set('asistler', l)} />
-              <KartListesi liste={(form.kartlar as KartItem[]) || []} takimlar={takimlar}
-                onChange={l => set('kartlar', l)} />
-            </div>
-          </div>
+          <OlayListesi baslik="⚽ Goller" liste={form.goller || []} takimlar={takimlar} onChange={v => set('goller', v)} />
+          <OlayListesi baslik="🎯 Asistler" liste={form.asistler || []} takimlar={takimlar} onChange={v => set('asistler', v)} />
+          <KartListesi liste={form.kartlar || []} takimlar={takimlar} onChange={v => set('kartlar', v)} />
         </>
       )}
       <div className="flex items-center gap-2">
-        <input type="checkbox" id="onemli" checked={!!form.onemli} onChange={e => set('onemli', e.target.checked)} className="w-4 h-4 accent-[#1A4D2E]" />
-        <label htmlFor="onemli" className="text-sm text-gray-600">Önemli maç (öne çıkar)</label>
+        <input type="checkbox" id="onemli" checked={!!form.onemli} onChange={e => set('onemli', e.target.checked)} className="w-4 h-4 accent-[#C0392B]" />
+        <label htmlFor="onemli" className="text-sm text-gray-700">Önemli maç (anasayfada öne çıkar)</label>
       </div>
-      <div className="flex gap-3 pt-2">
-        <button type="submit" className="flex-1 bg-[#1A4D2E] hover:bg-[#163d24] text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">Kaydet</button>
-        <button type="button" onClick={onKapat} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm transition-colors">İptal</button>
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
+        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
       </div>
     </form>
   );
@@ -275,26 +195,24 @@ function MacForm({ mac, onKaydet, onKapat }: { mac?: Mac; onKaydet: (d: Partial<
 
 // ===== HABER FORMU =====
 function HaberForm({ haber, onKaydet, onKapat }: { haber?: Haber; onKaydet: (d: Partial<Haber>) => void; onKapat: () => void }) {
-  const [form, setForm] = useState<Partial<Haber>>(haber || { baslik: '', slug: '', ozet: '', icerik: '', gorsel: '', kategori: 'Kulüp', tarih: new Date().toISOString().split('T')[0], yazar: 'Kulüp Basın' });
+  const [form, setForm] = useState<Partial<Haber>>(haber || { baslik: '', icerik: '', ozet: '', gorsel: '', kategori: 'Kulüp', tarih: new Date().toISOString().split('T')[0], slug: '' });
   const set = (k: keyof Haber, v: string) => setForm(f => ({ ...f, [k]: v }));
-  const slugOlustur = (s: string) => s.toLowerCase().replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
   return (
     <form onSubmit={e => { e.preventDefault(); onKaydet(form); }} className="space-y-4">
-      <FI label="Başlık" required value={form.baslik || ''} onChange={e => { set('baslik', e.target.value); if (!haber) set('slug', slugOlustur(e.target.value)); }} />
-      <FI label="Slug (URL)" required value={form.slug || ''} onChange={e => set('slug', e.target.value)} placeholder="otomatik-olusturulur" />
-      <FT label="Özet" required rows={2} value={form.ozet || ''} onChange={e => set('ozet', e.target.value)} />
-      <FT label="İçerik" required rows={5} value={form.icerik || ''} onChange={e => set('icerik', e.target.value)} />
-      <GorselYukle label="Görsel" value={form.gorsel || ''} onChange={url => set('gorsel', url)} />
+      <FI label="Başlık" required value={form.baslik || ''} onChange={e => set('baslik', e.target.value)} placeholder="Haber başlığı" />
+      <FI label="Slug (URL)" value={form.slug || ''} onChange={e => set('slug', e.target.value)} placeholder="haber-basligi (boş bırakırsan otomatik)" />
       <div className="grid grid-cols-2 gap-3">
+        <FI label="Tarih" required type="date" value={form.tarih || ''} onChange={e => set('tarih', e.target.value)} />
         <FS label="Kategori" value={form.kategori || 'Kulüp'} onChange={e => set('kategori', e.target.value)}>
-          {['Kulüp','Maç Haberi','Transfer','Altyapı','Etkinlik'].map(k => <option key={k}>{k}</option>)}
+          {['Kulüp', 'Maç', 'Transfer', 'Altyapı', 'Duyuru'].map(k => <option key={k}>{k}</option>)}
         </FS>
-        <FI label="Tarih" type="date" value={form.tarih || ''} onChange={e => set('tarih', e.target.value)} />
       </div>
-      <FI label="Yazar" value={form.yazar || ''} onChange={e => set('yazar', e.target.value)} />
-      <div className="flex gap-3 pt-2">
-        <button type="submit" className="flex-1 bg-[#1A4D2E] hover:bg-[#163d24] text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">Kaydet</button>
-        <button type="button" onClick={onKapat} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm transition-colors">İptal</button>
+      <GorselYukle label="Kapak Görseli" value={form.gorsel || ''} onChange={v => setForm(f => ({ ...f, gorsel: v }))} />
+      <FT label="Özet" rows={2} value={form.ozet || ''} onChange={e => set('ozet', e.target.value)} placeholder="Kısa özet (liste görünümünde gösterilir)" />
+      <FT label="İçerik" required rows={8} value={form.icerik || ''} onChange={e => set('icerik', e.target.value)} placeholder="Haber içeriği..." />
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
+        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
       </div>
     </form>
   );
@@ -302,45 +220,19 @@ function HaberForm({ haber, onKaydet, onKapat }: { haber?: Haber; onKaydet: (d: 
 
 // ===== PUAN FORMU =====
 function PuanForm({ takim, onKaydet, onKapat }: { takim?: PuanTablosu; onKaydet: (d: Partial<PuanTablosu>) => void; onKapat: () => void }) {
-  const [form, setForm] = useState<Partial<PuanTablosu>>(takim || { takim: '', o: 0, g: 0, b: 0, m: 0, ag: 0, yg: 0, av: 0, puan: 0, form: ['G','G','G','G','G'] });
-  const setN = (k: keyof PuanTablosu, v: number) => setForm(f => ({ ...f, [k]: v }));
-  const hesapla = (g: number, b: number, m: number, ag: number, yg: number) => ({ o: g+b+m, puan: g*3+b, av: ag-yg });
-  const guncelle = (k: 'g'|'b'|'m'|'ag'|'yg', v: number) => {
-    const y = { ...form, [k]: v };
-    setForm(f => ({ ...f, [k]: v, ...hesapla(y.g||0, y.b||0, y.m||0, y.ag||0, y.yg||0) }));
-  };
+  const [form, setForm] = useState<Partial<PuanTablosu>>(takim || { takim: '', o: 0, g: 0, b: 0, m: 0, ag: 0, yg: 0, av: 0, puan: 0 });
+  const set = (k: keyof PuanTablosu, v: string | number) => setForm(f => ({ ...f, [k]: v }));
   return (
     <form onSubmit={e => { e.preventDefault(); onKaydet(form); }} className="space-y-4">
-      <FI label="Takım Adı" required value={form.takim || ''} onChange={e => setForm(f => ({ ...f, takim: e.target.value }))} />
+      <FI label="Takım Adı" required value={form.takim || ''} onChange={e => set('takim', e.target.value)} placeholder="Takım adı" />
       <div className="grid grid-cols-3 gap-3">
-        <FI label="Galibiyet" type="number" min="0" value={form.g ?? 0} onChange={e => guncelle('g', Number(e.target.value))} />
-        <FI label="Beraberlik" type="number" min="0" value={form.b ?? 0} onChange={e => guncelle('b', Number(e.target.value))} />
-        <FI label="Mağlubiyet" type="number" min="0" value={form.m ?? 0} onChange={e => guncelle('m', Number(e.target.value))} />
+        {(['o', 'g', 'b', 'm', 'ag', 'yg', 'av', 'puan'] as const).map(k => (
+          <FI key={k} label={k.toUpperCase()} type="number" value={form[k] ?? 0} onChange={e => set(k, Number(e.target.value))} />
+        ))}
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <FI label="Attığı Gol" type="number" min="0" value={form.ag ?? 0} onChange={e => guncelle('ag', Number(e.target.value))} />
-        <FI label="Yediği Gol" type="number" min="0" value={form.yg ?? 0} onChange={e => guncelle('yg', Number(e.target.value))} />
-        <FI label="Puan (manuel)" type="number" value={form.puan ?? 0} onChange={e => setN('puan', Number(e.target.value))} />
-      </div>
-      <div className="bg-[#f8f9fa] rounded-xl p-3 text-sm text-gray-600 grid grid-cols-3 gap-2 border border-gray-100">
-        <div>Oynadığı: <span className="text-gray-900 font-bold">{form.o}</span></div>
-        <div>Averaj: <span className="text-gray-900 font-bold">{(form.av||0)>0?'+':''}{form.av}</span></div>
-        <div>Puan: <span className="text-[#1A4D2E] font-bold">{form.puan}</span></div>
-      </div>
-      <div>
-        <label className="block text-xs text-gray-500 mb-2 font-medium">Son 5 Maç Formu</label>
-        <div className="flex gap-2">
-          {(form.form||['G','G','G','G','G']).map((f, i) => (
-            <select key={i} value={f} onChange={e => { const y=[...(form.form||[])]; y[i]=e.target.value; setForm(p=>({...p,form:y})); }}
-              className={`w-12 py-1.5 text-center text-xs font-bold rounded border ${f==='G'?'bg-green-100 text-green-700 border-green-200':f==='B'?'bg-yellow-100 text-yellow-700 border-yellow-200':'bg-red-100 text-red-600 border-red-200'}`}>
-              <option value="G">G</option><option value="B">B</option><option value="M">M</option>
-            </select>
-          ))}
-        </div>
-      </div>
-      <div className="flex gap-3 pt-2">
-        <button type="submit" className="flex-1 bg-[#1A4D2E] hover:bg-[#163d24] text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">Kaydet</button>
-        <button type="button" onClick={onKapat} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm transition-colors">İptal</button>
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
+        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
       </div>
     </form>
   );
@@ -348,80 +240,141 @@ function PuanForm({ takim, onKaydet, onKapat }: { takim?: PuanTablosu; onKaydet:
 
 // ===== GALERİ FORMU =====
 function GaleriForm({ oge, onKaydet, onKapat }: { oge?: GaleriOge; onKaydet: (d: Partial<GaleriOge>) => void; onKapat: () => void }) {
-  const [form, setForm] = useState<Partial<GaleriOge>>(oge || { baslik: '', aciklama: '', gorsel: '', kategori: 'Maç', tarih: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState<Partial<GaleriOge>>(oge || { baslik: '', gorsel: '', kategori: 'Maç', tarih: new Date().toISOString().split('T')[0] });
   const set = (k: keyof GaleriOge, v: string) => setForm(f => ({ ...f, [k]: v }));
   return (
     <form onSubmit={e => { e.preventDefault(); onKaydet(form); }} className="space-y-4">
-      <FI label="Başlık" required value={form.baslik || ''} onChange={e => set('baslik', e.target.value)} />
-      <FT label="Açıklama" rows={2} value={form.aciklama || ''} onChange={e => set('aciklama', e.target.value)} />
-      <GorselYukle label="Görsel *" value={form.gorsel || ''} onChange={url => set('gorsel', url)} />
+      <FI label="Başlık" required value={form.baslik || ''} onChange={e => set('baslik', e.target.value)} placeholder="Fotoğraf başlığı" />
       <div className="grid grid-cols-2 gap-3">
         <FS label="Kategori" value={form.kategori || 'Maç'} onChange={e => set('kategori', e.target.value)}>
-          {['Maç','Tören','Antrenman','Etkinlik','Altyapı','Transfer','Tesis'].map(k => <option key={k}>{k}</option>)}
+          {['Maç', 'Antrenman', 'Tesis', 'Etkinlik', 'Diğer'].map(k => <option key={k}>{k}</option>)}
         </FS>
         <FI label="Tarih" type="date" value={form.tarih || ''} onChange={e => set('tarih', e.target.value)} />
       </div>
-      <div className="flex gap-3 pt-2">
-        <button type="submit" className="flex-1 bg-[#1A4D2E] hover:bg-[#163d24] text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">Kaydet</button>
-        <button type="button" onClick={onKapat} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm transition-colors">İptal</button>
+      <GorselYukle label="Fotoğraf" value={form.gorsel || ''} onChange={v => setForm(f => ({ ...f, gorsel: v }))} />
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
+        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
       </div>
     </form>
   );
 }
 
-// ===== ANA DASHBOARD =====
+// ===== YÖNETİM ÜYE FORMU =====
+function YonetimForm({ uye, onKaydet, onKapat }: { uye?: YonetimUye; onKaydet: (d: Partial<YonetimUye>) => void; onKapat: () => void }) {
+  const [form, setForm] = useState<Partial<YonetimUye>>(uye || { isim: '', gorev: '', gorsel: '' });
+  const set = (k: keyof YonetimUye, v: string) => setForm(f => ({ ...f, [k]: v }));
+  return (
+    <form onSubmit={e => { e.preventDefault(); onKaydet(form); }} className="space-y-4">
+      <FI label="İsim Soyisim" required value={form.isim || ''} onChange={e => set('isim', e.target.value)} placeholder="Ad Soyad" />
+      <FI label="Görev" required value={form.gorev || ''} onChange={e => set('gorev', e.target.value)} placeholder="Başkan, Genel Sekreter..." />
+      <GorselYukle label="Fotoğraf (isteğe bağlı)" value={form.gorsel || ''} onChange={v => setForm(f => ({ ...f, gorsel: v }))} />
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
+        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
+      </div>
+    </form>
+  );
+}
+
+// ===== SPONSOR FORMU =====
+function SponsorForm({ sponsor, onKaydet, onKapat }: { sponsor?: Sponsor; onKaydet: (d: Partial<Sponsor>) => void; onKapat: () => void }) {
+  const [form, setForm] = useState<Partial<Sponsor>>(sponsor || { isim: '', logo: '', web: '', kategori: 'Ana Sponsor' });
+  const set = (k: keyof Sponsor, v: string) => setForm(f => ({ ...f, [k]: v }));
+  return (
+    <form onSubmit={e => { e.preventDefault(); onKaydet(form); }} className="space-y-4">
+      <FI label="Sponsor Adı" required value={form.isim || ''} onChange={e => set('isim', e.target.value)} placeholder="Şirket adı" />
+      <FS label="Kategori" value={form.kategori || 'Ana Sponsor'} onChange={e => set('kategori', e.target.value)}>
+        {['Ana Sponsor', 'Forma Sponsoru', 'Alt Sponsor', 'Teknik Sponsor', 'Medya Sponsoru'].map(k => <option key={k}>{k}</option>)}
+      </FS>
+      <FI label="Web Sitesi" value={form.web || ''} onChange={e => set('web', e.target.value)} placeholder="https://example.com" />
+      <GorselYukle label="Logo" value={form.logo || ''} onChange={v => setForm(f => ({ ...f, logo: v }))} />
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
+        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
+      </div>
+    </form>
+  );
+}
+
+// ===== BÖLÜM BAŞLIĞI =====
+function BolumBaslik({ title }: { title: string }) {
+  return <div className="text-xs font-bold text-[#1A4D2E] uppercase tracking-wider bg-green-50 px-3 py-2 rounded-lg mb-3 mt-4 first:mt-0">{title}</div>;
+}
+
+// ===== ANA COMPONENT =====
 export default function AdminDashboard() {
   const router = useRouter();
   const [aktifSekme, setAktifSekme] = useState<Sekme>('maclar');
+  const [loading, setLoading] = useState(true);
+  const [bildirim, setBildirim] = useState('');
+
+  // Mevcut data states
   const [maclar, setMaclar] = useState<Mac[]>([]);
   const [haberler, setHaberler] = useState<Haber[]>([]);
   const [puanTablosu, setPuanTablosu] = useState<PuanTablosu[]>([]);
   const [galeri, setGaleri] = useState<GaleriOge[]>([]);
   const [mesajlar, setMesajlar] = useState<Mesaj[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [bildirim, setBildirim] = useState('');
+
+  // Yeni data states
+  const [siteAyarlari, setSiteAyarlari] = useState<SiteAyarlari | null>(null);
+  const [yonetim, setYonetim] = useState<YonetimUye[]>([]);
+  const [sponsorlar, setSponsorlar] = useState<Sponsor[]>([]);
+
+  // Modal states
   const [macModal, setMacModal] = useState<{ acik: boolean; mac?: Mac }>({ acik: false });
   const [haberModal, setHaberModal] = useState<{ acik: boolean; haber?: Haber }>({ acik: false });
   const [puanModal, setPuanModal] = useState<{ acik: boolean; takim?: PuanTablosu }>({ acik: false });
   const [galeriModal, setGaleriModal] = useState<{ acik: boolean; oge?: GaleriOge }>({ acik: false });
+  const [yonetimModal, setYonetimModal] = useState<{ acik: boolean; uye?: YonetimUye }>({ acik: false });
+  const [sponsorModal, setSponsorModal] = useState<{ acik: boolean; sponsor?: Sponsor }>({ acik: false });
 
-  const fetchAll = useCallback(async () => {
+  const goster = (mesaj: string) => { setBildirim(mesaj); setTimeout(() => setBildirim(''), 3000); };
+
+  const veriYukle = useCallback(async () => {
     try {
-      const [m, h, p, g, mes] = await Promise.all([
-        fetch('/api/maclar').then(r => r.json()),
-        fetch('/api/haberler').then(r => r.json()),
-        fetch('/api/puan').then(r => r.json()),
-        fetch('/api/galeri').then(r => r.json()),
-        fetch('/api/mesajlar').then(r => r.json()),
+      const [authRes] = await Promise.all([fetch('/api/auth/check')]);
+      if (!authRes.ok) { router.push('/admin'); return; }
+
+      const [macRes, haberRes, puanRes, galeriRes, mesajRes, ayarRes, yonetimRes, sponsorRes] = await Promise.all([
+        fetch('/api/maclar'), fetch('/api/haberler'), fetch('/api/puan'),
+        fetch('/api/galeri'), fetch('/api/mesajlar'),
+        fetch('/api/site-ayarlari'), fetch('/api/yonetim'), fetch('/api/sponsorlar'),
       ]);
-      setMaclar(Array.isArray(m) ? m : []);
-      setHaberler(Array.isArray(h) ? h : []);
-      setPuanTablosu(Array.isArray(p) ? p : []);
-      setGaleri(Array.isArray(g) ? g : []);
-      setMesajlar(Array.isArray(mes) ? mes : []);
-    } catch { console.error('Veri yüklenemedi'); }
+
+      setMaclar(await macRes.json());
+      setHaberler(await haberRes.json());
+      setPuanTablosu(await puanRes.json());
+      setGaleri(await galeriRes.json());
+      setMesajlar(await mesajRes.json());
+      setSiteAyarlari(await ayarRes.json());
+      setYonetim(await yonetimRes.json());
+      setSponsorlar(await sponsorRes.json());
+    } catch { router.push('/admin'); }
     finally { setLoading(false); }
-  }, []);
+  }, [router]);
 
-  useEffect(() => {
-    fetch('/api/auth/check').then(r => { if (!r.ok) router.push('/admin'); });
-    fetchAll();
-  }, [fetchAll, router]);
+  useEffect(() => { veriYukle(); }, [veriYukle]);
 
-  const goster = (msg: string) => { setBildirim(msg); setTimeout(() => setBildirim(''), 3000); };
-  const cikisYap = async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.push('/admin'); };
+  const cikisYap = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/admin');
+  };
 
+  // ===== MAÇ CRUD =====
   const macKaydet = async (data: Partial<Mac>) => {
     if (macModal.mac) {
       const yeni = maclar.map(m => m.id === macModal.mac!.id ? { ...m, ...data } : m);
       await fetch('/api/maclar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
       setMaclar(yeni); goster('Maç güncellendi');
     } else {
-      const res = await fetch('/api/maclar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const yeni = await res.json(); setMaclar(prev => [yeni, ...prev]); goster('Maç eklendi');
+      const res = await fetch('/api/maclar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, id: Date.now().toString() }) });
+      const yeni = await res.json();
+      setMaclar(p => [yeni, ...p]); goster('Maç eklendi');
     }
     setMacModal({ acik: false });
   };
+
   const macSil = async (id: string) => {
     if (!confirm('Bu maçı silmek istediğinizden emin misiniz?')) return;
     const yeni = maclar.filter(m => m.id !== id);
@@ -429,6 +382,7 @@ export default function AdminDashboard() {
     setMaclar(yeni); goster('Maç silindi');
   };
 
+  // ===== HABER CRUD =====
   const haberKaydet = async (data: Partial<Haber>) => {
     if (haberModal.haber) {
       const yeni = haberler.map(h => h.id === haberModal.haber!.id ? { ...h, ...data } : h);
@@ -436,30 +390,33 @@ export default function AdminDashboard() {
       setHaberler(yeni); goster('Haber güncellendi');
     } else {
       const res = await fetch('/api/haberler', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const yeni = await res.json(); setHaberler(prev => [yeni, ...prev]); goster('Haber eklendi');
+      const yeni = await res.json();
+      setHaberler(p => [yeni, ...p]); goster('Haber eklendi');
     }
     setHaberModal({ acik: false });
   };
+
   const haberSil = async (id: string) => {
     if (!confirm('Bu haberi silmek istediğinizden emin misiniz?')) return;
-    const yeni = haberler.filter(h => h.id !== id);
-    await fetch('/api/haberler', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
-    setHaberler(yeni); goster('Haber silindi');
+    await fetch('/api/haberler', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    setHaberler(p => p.filter(h => h.id !== id)); goster('Haber silindi');
   };
 
+  // ===== PUAN CRUD =====
   const puanKaydet = async (data: Partial<PuanTablosu>) => {
     if (puanModal.takim) {
-      const yeni = puanTablosu.map(t => t.id === puanModal.takim!.id ? { ...t, ...data } : t).sort((a,b) => b.puan-a.puan||b.av-a.av);
+      const yeni = puanTablosu.map(t => t.id === puanModal.takim!.id ? { ...t, ...data } : t);
       await fetch('/api/puan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
       setPuanTablosu(yeni); goster('Takım güncellendi');
     } else {
-      const yeniT: PuanTablosu = { id: Date.now().toString(), takim:'', o:0, g:0, b:0, m:0, ag:0, yg:0, av:0, puan:0, form:[], ...data } as PuanTablosu;
-      const yeni = [...puanTablosu, yeniT].sort((a,b) => b.puan-a.puan||b.av-a.av);
+      const yeniTakim = { ...data, id: Date.now().toString() } as PuanTablosu;
+      const yeni = [...puanTablosu, yeniTakim].sort((a, b) => b.puan - a.puan);
       await fetch('/api/puan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
       setPuanTablosu(yeni); goster('Takım eklendi');
     }
     setPuanModal({ acik: false });
   };
+
   const puanSil = async (id: string) => {
     if (!confirm('Bu takımı silmek istediğinizden emin misiniz?')) return;
     const yeni = puanTablosu.filter(t => t.id !== id);
@@ -467,17 +424,21 @@ export default function AdminDashboard() {
     setPuanTablosu(yeni); goster('Takım silindi');
   };
 
+  // ===== GALERİ CRUD =====
   const galeriKaydet = async (data: Partial<GaleriOge>) => {
     if (galeriModal.oge) {
       const yeni = galeri.map(g => g.id === galeriModal.oge!.id ? { ...g, ...data } : g);
       await fetch('/api/galeri', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
       setGaleri(yeni); goster('Fotoğraf güncellendi');
     } else {
-      const res = await fetch('/api/galeri', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const yeni = await res.json(); setGaleri(prev => [yeni, ...prev]); goster('Fotoğraf eklendi');
+      const yeniOge = { ...data, id: Date.now().toString() } as GaleriOge;
+      const yeni = [yeniOge, ...galeri];
+      await fetch('/api/galeri', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      setGaleri(yeni); goster('Fotoğraf eklendi');
     }
     setGaleriModal({ acik: false });
   };
+
   const galeriSil = async (id: string) => {
     if (!confirm('Bu fotoğrafı silmek istediğinizden emin misiniz?')) return;
     const yeni = galeri.filter(g => g.id !== id);
@@ -485,11 +446,13 @@ export default function AdminDashboard() {
     setGaleri(yeni); goster('Fotoğraf silindi');
   };
 
+  // ===== MESAJ İŞLEMLERİ =====
   const mesajOkundu = async (id: string) => {
     const yeni = mesajlar.map(m => m.id === id ? { ...m, okundu: true } : m);
     await fetch('/api/mesajlar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
     setMesajlar(yeni);
   };
+
   const mesajSil = async (id: string) => {
     if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
     const yeni = mesajlar.filter(m => m.id !== id);
@@ -497,12 +460,75 @@ export default function AdminDashboard() {
     setMesajlar(yeni); goster('Mesaj silindi');
   };
 
+  // ===== SİTE AYARLARI KAYDET =====
+  const siteAyarlariKaydet = async () => {
+    if (!siteAyarlari) return;
+    await fetch('/api/site-ayarlari', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(siteAyarlari) });
+    goster('Site ayarları kaydedildi');
+  };
+
+  const ayarSet = (path: string, value: string) => {
+    if (!siteAyarlari) return;
+    const keys = path.split('.');
+    setSiteAyarlari(prev => {
+      if (!prev) return prev;
+      const updated = JSON.parse(JSON.stringify(prev));
+      let obj = updated;
+      for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
+      obj[keys[keys.length - 1]] = value;
+      return updated;
+    });
+  };
+
+  // ===== YÖNETİM CRUD =====
+  const yonetimKaydet = async (data: Partial<YonetimUye>) => {
+    if (yonetimModal.uye) {
+      const yeni = yonetim.map(u => u.id === yonetimModal.uye!.id ? { ...u, ...data } : u);
+      await fetch('/api/yonetim', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      setYonetim(yeni); goster('Üye güncellendi');
+    } else {
+      const res = await fetch('/api/yonetim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const yeniUye = await res.json();
+      setYonetim(p => [...p, yeniUye]); goster('Üye eklendi');
+    }
+    setYonetimModal({ acik: false });
+  };
+
+  const yonetimSil = async (id: string) => {
+    if (!confirm('Bu üyeyi silmek istediğinizden emin misiniz?')) return;
+    await fetch('/api/yonetim', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    setYonetim(p => p.filter(u => u.id !== id)); goster('Üye silindi');
+  };
+
+  // ===== SPONSOR CRUD =====
+  const sponsorKaydet = async (data: Partial<Sponsor>) => {
+    if (sponsorModal.sponsor) {
+      const yeni = sponsorlar.map(s => s.id === sponsorModal.sponsor!.id ? { ...s, ...data } : s);
+      await fetch('/api/sponsorlar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      setSponsorlar(yeni); goster('Sponsor güncellendi');
+    } else {
+      const res = await fetch('/api/sponsorlar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const yeniSponsor = await res.json();
+      setSponsorlar(p => [...p, yeniSponsor]); goster('Sponsor eklendi');
+    }
+    setSponsorModal({ acik: false });
+  };
+
+  const sponsorSil = async (id: string) => {
+    if (!confirm('Bu sponsoru silmek istediğinizden emin misiniz?')) return;
+    await fetch('/api/sponsorlar', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    setSponsorlar(p => p.filter(s => s.id !== id)); goster('Sponsor silindi');
+  };
+
   const sekmeler = [
-    { id: 'maclar' as Sekme, label: 'Maçlar', count: maclar.length },
-    { id: 'haberler' as Sekme, label: 'Haberler', count: haberler.length },
-    { id: 'puan' as Sekme, label: 'Puan Tablosu', count: puanTablosu.length },
-    { id: 'galeri' as Sekme, label: 'Galeri', count: galeri.length },
-    { id: 'mesajlar' as Sekme, label: 'Mesajlar', count: mesajlar.filter(m => !m.okundu).length },
+    { id: 'maclar' as Sekme, label: 'Maçlar', count: maclar.length, emoji: '⚽' },
+    { id: 'haberler' as Sekme, label: 'Haberler', count: haberler.length, emoji: '📰' },
+    { id: 'puan' as Sekme, label: 'Puan Tablosu', count: puanTablosu.length, emoji: '🏆' },
+    { id: 'galeri' as Sekme, label: 'Galeri', count: galeri.length, emoji: '📸' },
+    { id: 'mesajlar' as Sekme, label: 'Mesajlar', count: mesajlar.filter(m => !m.okundu).length, emoji: '✉️' },
+    { id: 'siteayarlari' as Sekme, label: 'Site Ayarları', count: null, emoji: '⚙️' },
+    { id: 'yonetim' as Sekme, label: 'Yönetim Kurulu', count: yonetim.length, emoji: '👥' },
+    { id: 'sponsorlar' as Sekme, label: 'Sponsorlar', count: sponsorlar.length, emoji: '🤝' },
   ];
 
   if (loading) return (
@@ -513,7 +539,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
-      {/* Bildirim */}
       {bildirim && (
         <div className="fixed top-4 right-4 z-50 bg-[#1A4D2E] text-white px-4 py-2 rounded-xl text-sm shadow-lg">
           ✓ {bildirim}
@@ -525,6 +550,8 @@ export default function AdminDashboard() {
       {haberModal.acik && <Modal baslik={haberModal.haber ? 'Haber Düzenle' : 'Yeni Haber Ekle'} onKapat={() => setHaberModal({ acik: false })}><HaberForm haber={haberModal.haber} onKaydet={haberKaydet} onKapat={() => setHaberModal({ acik: false })} /></Modal>}
       {puanModal.acik && <Modal baslik={puanModal.takim ? 'Takım Düzenle' : 'Yeni Takım Ekle'} onKapat={() => setPuanModal({ acik: false })}><PuanForm takim={puanModal.takim} onKaydet={puanKaydet} onKapat={() => setPuanModal({ acik: false })} /></Modal>}
       {galeriModal.acik && <Modal baslik={galeriModal.oge ? 'Fotoğraf Düzenle' : 'Yeni Fotoğraf Ekle'} onKapat={() => setGaleriModal({ acik: false })}><GaleriForm oge={galeriModal.oge} onKaydet={galeriKaydet} onKapat={() => setGaleriModal({ acik: false })} /></Modal>}
+      {yonetimModal.acik && <Modal baslik={yonetimModal.uye ? 'Üye Düzenle' : 'Yeni Üye Ekle'} onKapat={() => setYonetimModal({ acik: false })}><YonetimForm uye={yonetimModal.uye} onKaydet={yonetimKaydet} onKapat={() => setYonetimModal({ acik: false })} /></Modal>}
+      {sponsorModal.acik && <Modal baslik={sponsorModal.sponsor ? 'Sponsor Düzenle' : 'Yeni Sponsor Ekle'} onKapat={() => setSponsorModal({ acik: false })}><SponsorForm sponsor={sponsorModal.sponsor} onKaydet={sponsorKaydet} onKapat={() => setSponsorModal({ acik: false })} /></Modal>}
 
       {/* Header */}
       <div className="bg-[#1A4D2E] border-b border-green-900/30 px-4 py-3">
@@ -547,25 +574,26 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Özet Kartlar */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-          {sekmeler.map(s => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {sekmeler.slice(0, 4).map(s => (
             <button key={s.id} onClick={() => setAktifSekme(s.id)}
               className={`p-4 rounded-xl border text-left transition-all duration-200 card-shadow ${aktifSekme === s.id ? 'bg-[#1A4D2E] border-[#1A4D2E]' : 'bg-white border-gray-100 hover:border-[#1A4D2E]/30'}`}>
               <div className={`text-2xl font-black mb-1 ${aktifSekme === s.id ? 'text-[#D4AF37]' : 'text-gray-900'}`}>{s.count}</div>
-              <div className={`text-xs font-medium ${aktifSekme === s.id ? 'text-green-100' : 'text-gray-500'}`}>{s.label}</div>
+              <div className={`text-xs font-medium ${aktifSekme === s.id ? 'text-green-100' : 'text-gray-500'}`}>{s.emoji} {s.label}</div>
             </button>
           ))}
         </div>
 
         {/* Sekme Bar */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 flex-wrap">
           {sekmeler.map(s => (
             <button key={s.id} onClick={() => setAktifSekme(s.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${aktifSekme === s.id ? 'bg-[#1A4D2E] text-white' : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'}`}>
-              {s.label}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${aktifSekme === s.id ? 'bg-[#1A4D2E] text-white' : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'}`}>
+              {s.emoji} {s.label}
               {s.id === 'mesajlar' && mesajlar.filter(m => !m.okundu).length > 0 && (
                 <span className="ml-2 bg-[#C0392B] text-white text-xs px-1.5 py-0.5 rounded-full font-bold">{mesajlar.filter(m => !m.okundu).length}</span>
               )}
+              {s.count !== null && s.id !== 'mesajlar' && <span className="ml-2 text-xs opacity-60">({s.count})</span>}
             </button>
           ))}
         </div>
@@ -582,7 +610,7 @@ export default function AdminDashboard() {
               </div>
               <div className="divide-y divide-gray-100">
                 {maclar.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">Henüz maç yok.</div> :
-                  maclar.sort((a,b) => new Date(b.tarih).getTime()-new Date(a.tarih).getTime()).map(mac => (
+                  maclar.sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime()).map(mac => (
                     <div key={mac.id} className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50">
                       <div className="flex-1 min-w-0">
                         <div className="text-gray-900 text-sm font-semibold">{mac.ev_sahibi} <span className="text-gray-400 font-normal">vs</span> {mac.misafir}</div>
@@ -590,13 +618,12 @@ export default function AdminDashboard() {
                         {mac.durum === 'tamamlandi' && <div className="text-[#1A4D2E] text-xs mt-0.5 font-bold">{mac.ev_gol} - {mac.mis_gol}</div>}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${mac.durum==='tamamlandi'?'bg-green-100 text-green-700':mac.durum==='gelecek'?'bg-blue-100 text-blue-600':'bg-yellow-100 text-yellow-700'}`}>{mac.durum}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${mac.durum === 'tamamlandi' ? 'bg-green-100 text-green-700' : mac.durum === 'gelecek' ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-yellow-700'}`}>{mac.durum}</span>
                         <button onClick={() => setMacModal({ acik: true, mac })} className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">Düzenle</button>
                         <button onClick={() => macSil(mac.id)} className="text-xs px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors">Sil</button>
                       </div>
                     </div>
-                  ))
-                }
+                  ))}
               </div>
             </div>
           )}
@@ -623,8 +650,7 @@ export default function AdminDashboard() {
                         <button onClick={() => haberSil(haber.id)} className="text-xs px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors">Sil</button>
                       </div>
                     </div>
-                  ))
-                }
+                  ))}
               </div>
             </div>
           )}
@@ -653,14 +679,14 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {puanTablosu.map((t, idx) => (
-                      <tr key={t.id} className={`border-b border-gray-100 table-row-hover ${t.takim==='1453 İstanbul AS'?'bg-[#1A4D2E]/5 font-semibold':''}`}>
-                        <td className="px-4 py-2.5 text-gray-400">{idx+1}</td>
+                      <tr key={t.id} className={`border-b border-gray-100 ${t.takim === '1453 İstanbul AS' ? 'bg-[#1A4D2E]/5 font-semibold' : ''}`}>
+                        <td className="px-4 py-2.5 text-gray-400">{idx + 1}</td>
                         <td className="px-4 py-2.5 text-gray-900">{t.takim}</td>
                         <td className="px-2 py-2.5 text-center text-gray-500">{t.o}</td>
                         <td className="px-2 py-2.5 text-center text-green-600">{t.g}</td>
                         <td className="px-2 py-2.5 text-center text-gray-500">{t.b}</td>
                         <td className="px-2 py-2.5 text-center text-red-500">{t.m}</td>
-                        <td className="px-2 py-2.5 text-center text-gray-500">{t.av>0?`+${t.av}`:t.av}</td>
+                        <td className="px-2 py-2.5 text-center text-gray-500">{t.av > 0 ? `+${t.av}` : t.av}</td>
                         <td className="px-2 py-2.5 text-center font-bold text-[#1A4D2E]">{t.puan}</td>
                         <td className="px-4 py-2.5 text-right">
                           <div className="flex justify-end gap-2">
@@ -693,8 +719,8 @@ export default function AdminDashboard() {
                         <button onClick={() => galeriSil(foto.id)} className="text-xs px-2 py-1 bg-red-500 text-white rounded transition-colors font-medium">Sil</button>
                       </div>
                     </div>
-                    <p className="mt-1.5 text-xs font-medium text-gray-800 truncate px-0.5">{foto.baslik}</p>
-                    <p className="text-xs text-gray-400 px-0.5">{foto.kategori}</p>
+                    <p className="mt-1.5 text-xs font-medium text-gray-800 truncate">{foto.baslik}</p>
+                    <p className="text-xs text-gray-400">{foto.kategori}</p>
                   </div>
                 ))}
               </div>
@@ -705,12 +731,12 @@ export default function AdminDashboard() {
           {aktifSekme === 'mesajlar' && (
             <div>
               <div className="p-4 border-b border-gray-100">
-                <h2 className="font-bold text-gray-900">Mesajlar <span className="text-gray-400 font-normal text-sm">({mesajlar.filter(m=>!m.okundu).length} okunmamış)</span></h2>
+                <h2 className="font-bold text-gray-900">Mesajlar <span className="text-gray-400 font-normal text-sm">({mesajlar.filter(m => !m.okundu).length} okunmamış)</span></h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {mesajlar.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">Henüz mesaj yok.</div> :
                   mesajlar.map(mesaj => (
-                    <div key={mesaj.id} className={`p-4 ${!mesaj.okundu?'bg-green-50/50':''} hover:bg-gray-50`}>
+                    <div key={mesaj.id} className={`p-4 ${!mesaj.okundu ? 'bg-green-50/50' : ''} hover:bg-gray-50`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -718,7 +744,7 @@ export default function AdminDashboard() {
                             {!mesaj.okundu && <span className="w-2 h-2 rounded-full bg-[#C0392B]" />}
                             <span className="text-xs text-gray-400 ml-auto">{new Date(mesaj.tarih).toLocaleDateString('tr-TR')}</span>
                           </div>
-                          <div className="text-gray-500 text-xs mb-1">{mesaj.email}{mesaj.telefon&&` · ${mesaj.telefon}`}</div>
+                          <div className="text-gray-500 text-xs mb-1">{mesaj.email}{mesaj.telefon && ` · ${mesaj.telefon}`}</div>
                           <div className="text-[#1A4D2E] text-xs font-semibold mb-2">{mesaj.konu}</div>
                           <p className="text-gray-700 text-sm">{mesaj.mesaj}</p>
                         </div>
@@ -728,8 +754,212 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                  ))
-                }
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* SİTE AYARLARI */}
+          {aktifSekme === 'siteayarlari' && siteAyarlari && (
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-gray-900">⚙️ Site Ayarları</h2>
+                <button onClick={siteAyarlariKaydet} className="bg-[#1A4D2E] hover:bg-[#163d24] text-white text-sm px-5 py-2 rounded-lg font-semibold transition-colors">💾 Kaydet</button>
+              </div>
+
+              <div className="space-y-6">
+                {/* İletişim */}
+                <div>
+                  <BolumBaslik title="İletişim Bilgileri" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FI label="Adres" value={siteAyarlari.iletisim.adres} onChange={e => ayarSet('iletisim.adres', e.target.value)} placeholder="Tam adres" />
+                    <FI label="E-posta" value={siteAyarlari.iletisim.email} onChange={e => ayarSet('iletisim.email', e.target.value)} placeholder="info@example.com" />
+                    <FI label="Telefon" value={siteAyarlari.iletisim.telefon} onChange={e => ayarSet('iletisim.telefon', e.target.value)} placeholder="0541 439 1453" />
+                    <FI label="Harita Linki" value={siteAyarlari.iletisim.harita_link} onChange={e => ayarSet('iletisim.harita_link', e.target.value)} placeholder="https://maps.google.com/..." />
+                  </div>
+                </div>
+
+                {/* Çalışma Saatleri */}
+                <div>
+                  <BolumBaslik title="Çalışma Saatleri" />
+                  <div className="space-y-2">
+                    {siteAyarlari.calisma_saatleri.map((s, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input value={s.gun} onChange={e => {
+                          const yeni = [...siteAyarlari.calisma_saatleri];
+                          yeni[i] = { ...yeni[i], gun: e.target.value };
+                          setSiteAyarlari(prev => prev ? { ...prev, calisma_saatleri: yeni } : prev);
+                        }} className="flex-1 bg-[#f8f9fa] border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="Gün" />
+                        <input value={s.saat} onChange={e => {
+                          const yeni = [...siteAyarlari.calisma_saatleri];
+                          yeni[i] = { ...yeni[i], saat: e.target.value };
+                          setSiteAyarlari(prev => prev ? { ...prev, calisma_saatleri: yeni } : prev);
+                        }} className="flex-1 bg-[#f8f9fa] border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="Saat" />
+                        <button type="button" onClick={() => {
+                          const yeni = siteAyarlari.calisma_saatleri.filter((_, idx) => idx !== i);
+                          setSiteAyarlari(prev => prev ? { ...prev, calisma_saatleri: yeni } : prev);
+                        }} className="text-red-400 hover:text-red-600 text-lg font-bold px-2">×</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setSiteAyarlari(prev => prev ? { ...prev, calisma_saatleri: [...prev.calisma_saatleri, { gun: '', saat: '' }] } : prev)}
+                      className="text-xs px-3 py-1.5 border border-dashed border-gray-300 text-gray-500 rounded-lg hover:border-[#1A4D2E] hover:text-[#1A4D2E] transition-colors">
+                      + Saat Ekle
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sosyal Medya */}
+                <div>
+                  <BolumBaslik title="Sosyal Medya" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FI label="Instagram" value={siteAyarlari.sosyal_medya.instagram} onChange={e => ayarSet('sosyal_medya.instagram', e.target.value)} placeholder="https://instagram.com/..." />
+                    <FI label="Twitter / X" value={siteAyarlari.sosyal_medya.twitter} onChange={e => ayarSet('sosyal_medya.twitter', e.target.value)} placeholder="https://twitter.com/..." />
+                    <FI label="Facebook" value={siteAyarlari.sosyal_medya.facebook} onChange={e => ayarSet('sosyal_medya.facebook', e.target.value)} placeholder="https://facebook.com/..." />
+                    <FI label="YouTube" value={siteAyarlari.sosyal_medya.youtube} onChange={e => ayarSet('sosyal_medya.youtube', e.target.value)} placeholder="https://youtube.com/..." />
+                  </div>
+                </div>
+
+                {/* Hero Bölümü */}
+                <div>
+                  <BolumBaslik title="Anasayfa Hero Bölümü" />
+                  <div className="space-y-3">
+                    <FI label="Ana Başlık" value={siteAyarlari.hero.baslik} onChange={e => ayarSet('hero.baslik', e.target.value)} placeholder="1453 İSTANBUL AS" />
+                    <FI label="Alt Yazı" value={siteAyarlari.hero.altyazi} onChange={e => ayarSet('hero.altyazi', e.target.value)} placeholder="İstanbul'un Kalbi Biziz" />
+                    <FI label="Açıklama" value={siteAyarlari.hero.aciklama} onChange={e => ayarSet('hero.aciklama', e.target.value)} placeholder="Kısa slogan" />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div>
+                  <BolumBaslik title="Footer" />
+                  <FT label="Footer Açıklaması" rows={3} value={siteAyarlari.footer_aciklama} onChange={e => setSiteAyarlari(prev => prev ? { ...prev, footer_aciklama: e.target.value } : prev)} placeholder="Kulüp hakkında kısa açıklama" />
+                </div>
+
+                {/* Vizyon & Misyon */}
+                <div>
+                  <BolumBaslik title="Vizyon & Misyon (Kulüp Sayfası)" />
+                  <div className="space-y-3">
+                    <FT label="Vizyon" rows={3} value={siteAyarlari.vizyon} onChange={e => setSiteAyarlari(prev => prev ? { ...prev, vizyon: e.target.value } : prev)} placeholder="Vizyonunuzu yazın..." />
+                    <FT label="Misyon" rows={3} value={siteAyarlari.misyon} onChange={e => setSiteAyarlari(prev => prev ? { ...prev, misyon: e.target.value } : prev)} placeholder="Misyonunuzu yazın..." />
+                  </div>
+                </div>
+
+                {/* Başkan Mesajı */}
+                <div>
+                  <BolumBaslik title="Başkan Mesajı" />
+                  <div className="space-y-3">
+                    <GorselYukle label="Başkan Fotoğrafı" value={siteAyarlari.baskan_gorsel} onChange={v => setSiteAyarlari(prev => prev ? { ...prev, baskan_gorsel: v } : prev)} />
+                    <FT label="Mesaj" rows={4} value={siteAyarlari.baskan_mesaj} onChange={e => setSiteAyarlari(prev => prev ? { ...prev, baskan_mesaj: e.target.value } : prev)} placeholder="Başkanın mesajı..." />
+                  </div>
+                </div>
+
+                {/* Tarihçe */}
+                <div>
+                  <BolumBaslik title="Kulüp Tarihçesi" />
+                  <div className="space-y-3">
+                    {siteAyarlari.tarihce.map((madde, i) => (
+                      <div key={i} className="bg-[#f8f9fa] rounded-xl p-4 border border-gray-200">
+                        <div className="flex gap-2 mb-2">
+                          <input value={madde.yil} onChange={e => {
+                            const yeni = [...siteAyarlari.tarihce];
+                            yeni[i] = { ...yeni[i], yil: e.target.value };
+                            setSiteAyarlari(prev => prev ? { ...prev, tarihce: yeni } : prev);
+                          }} className="w-20 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold text-[#C0392B]" placeholder="Yıl" />
+                          <input value={madde.baslik} onChange={e => {
+                            const yeni = [...siteAyarlari.tarihce];
+                            yeni[i] = { ...yeni[i], baslik: e.target.value };
+                            setSiteAyarlari(prev => prev ? { ...prev, tarihce: yeni } : prev);
+                          }} className="flex-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Başlık" />
+                          <button type="button" onClick={() => {
+                            const yeni = siteAyarlari.tarihce.filter((_, idx) => idx !== i);
+                            setSiteAyarlari(prev => prev ? { ...prev, tarihce: yeni } : prev);
+                          }} className="text-red-400 hover:text-red-600 font-bold text-lg px-2">×</button>
+                        </div>
+                        <textarea value={madde.icerik} onChange={e => {
+                          const yeni = [...siteAyarlari.tarihce];
+                          yeni[i] = { ...yeni[i], icerik: e.target.value };
+                          setSiteAyarlari(prev => prev ? { ...prev, tarihce: yeni } : prev);
+                        }} rows={2} className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm resize-none" placeholder="Açıklama" />
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setSiteAyarlari(prev => prev ? { ...prev, tarihce: [...prev.tarihce, { yil: '', baslik: '', icerik: '' }] } : prev)}
+                      className="text-xs px-3 py-1.5 border border-dashed border-gray-300 text-gray-500 rounded-lg hover:border-[#1A4D2E] hover:text-[#1A4D2E] transition-colors">
+                      + Dönem Ekle
+                    </button>
+                  </div>
+                </div>
+
+                {/* Kaydet butonu alt */}
+                <div className="pt-2 flex justify-end">
+                  <button onClick={siteAyarlariKaydet} className="bg-[#1A4D2E] hover:bg-[#163d24] text-white text-sm px-6 py-2.5 rounded-lg font-semibold transition-colors">💾 Tüm Ayarları Kaydet</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* YÖNETİM KURULU */}
+          {aktifSekme === 'yonetim' && (
+            <div>
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-gray-900">👥 Yönetim Kurulu <span className="text-gray-400 font-normal text-sm">({yonetim.length} üye)</span></h2>
+                <button onClick={() => setYonetimModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Üye Ekle</button>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {yonetim.map((uye) => (
+                    <div key={uye.id} className="bg-[#f8f9fa] rounded-xl p-4 border border-gray-200 flex items-center gap-3">
+                      <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow">
+                        {uye.gorsel ? (
+                          <Image src={uye.gorsel} alt={uye.isim} fill className="object-cover" sizes="56px" unoptimized />
+                        ) : (
+                          <div className="w-full h-full bg-[#1A4D2E]/10 flex items-center justify-center">
+                            <span className="text-xl font-bold text-[#1A4D2E]">{uye.isim.charAt(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 text-sm truncate">{uye.isim}</div>
+                        <div className="text-xs text-[#1A4D2E] font-medium">{uye.gorev}</div>
+                        <div className="flex gap-2 mt-2">
+                          <button onClick={() => setYonetimModal({ acik: true, uye })} className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition-colors">Düzenle</button>
+                          <button onClick={() => yonetimSil(uye.id)} className="text-xs px-2 py-1 bg-red-50 hover:bg-red-100 text-red-500 rounded transition-colors">Sil</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {yonetim.length === 0 && <div className="text-center text-gray-400 text-sm py-8">Henüz üye yok.</div>}
+              </div>
+            </div>
+          )}
+
+          {/* SPONSORLAR */}
+          {aktifSekme === 'sponsorlar' && (
+            <div>
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-gray-900">🤝 Sponsorlar <span className="text-gray-400 font-normal text-sm">({sponsorlar.length})</span></h2>
+                <button onClick={() => setSponsorModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Sponsor Ekle</button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {sponsorlar.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">Henüz sponsor yok.</div> :
+                  sponsorlar.map(sponsor => (
+                    <div key={sponsor.id} className="p-4 flex items-center gap-4 hover:bg-gray-50">
+                      {sponsor.logo && (
+                        <div className="relative w-24 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-white">
+                          <Image src={sponsor.logo} alt={sponsor.isim} fill className="object-contain p-1" sizes="96px" unoptimized />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 text-sm">{sponsor.isim}</div>
+                        <div className="text-xs text-[#C0392B] font-medium">{sponsor.kategori}</div>
+                        {sponsor.web && <div className="text-xs text-gray-400 truncate">{sponsor.web}</div>}
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => setSponsorModal({ acik: true, sponsor })} className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">Düzenle</button>
+                        <button onClick={() => sponsorSil(sponsor.id)} className="text-xs px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors">Sil</button>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           )}

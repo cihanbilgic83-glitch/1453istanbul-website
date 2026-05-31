@@ -1,0 +1,65 @@
+{
+  "iletisim": {
+    "adres": "Sultanmurat Mahallesi 1.Cami Sokak No:6/1 Küçükçekmece/İstanbul",
+    "email": "1453istanbulspor@gmail.com",
+    "telefon": "0541 439 1453",
+    "harita_link": "https://maps.google.com/?q=Sultanmurat+Mahallesi+Küçükçekmece+İstanbul"
+  },
+  "calisma_saatleri": [
+    {
+      "gun": "Pazartesi - Cuma",
+      "saat": "09:00 - 18:00"
+    },
+    {
+      "gun": "Cumartesi",
+      "saat": "10:00 - 14:00"
+    },
+    {
+      "gun": "Pazar",
+      "saat": "Kapalı"
+    }
+  ],
+  "sosyal_medya": {
+    "instagram": "https://instagram.com",
+    "twitter": "https://twitter.com",
+    "facebook": "https://facebook.com",
+    "youtube": ""
+  },
+  "hero": {
+    "baslik": "1453 İSTANBUL AS",
+    "altyazi": "Spor Kulübü ",
+    "aciklama": "İstanbul'un fethinden ilham alan güç, azim ve tutku ile her maça çıkıyoruz. "
+  },
+  "footer_aciklama": "1453 İstanbul AS Spor Kulübü, İstanbul'un fethinden ilham alan güçlü bir futbol geleneğini yaşatmaktadır.",
+  "vizyon": "İstanbul'un futbol kültürüne katkı sağlayan, genç yetenekleri keşfedip geliştiren ve ulusal arenada söz sahibi olan bir spor kulübü olmak.",
+  "misyon": "Sporun birleştirici gücünden yararlanarak topluma değer katmak, sporcularımızı hem sahada hem de hayatta en iyi şekilde yetiştirmek.",
+  "baskan_mesaj": "1453 İstanbul AS olarak, İstanbul'un köklü futbol geleneğini yaşatmak ve geleceğe taşımak en büyük önceliğimizdir. Desteklerinizle daha güçlü büyüyoruz.",
+  "baskan_gorsel": "https://picsum.photos/seed/baskan1453/200/200",
+  "tarihce": [
+    {
+      "yil": "2012",
+      "baslik": "Kuruluş",
+      "icerik": "1453 İstanbul AS Spor Kulübü, İstanbul'un fethinin sembolü olan 1453 yılından ilham alınarak kuruldu."
+    },
+    {
+      "yil": "2015",
+      "baslik": "İlk Kupa",
+      "icerik": "Bölgesel turnuvada şampiyonluk yaşayan kulüp, ilk büyük başarısını elde etti."
+    },
+    {
+      "yil": "2019",
+      "baslik": "Amatör Lig",
+      "icerik": "İstanbul Amatör Ligi'ne yükselen kulüp, profesyonel bir yapıya kavuştu."
+    },
+    {
+      "yil": "2022",
+      "baslik": "Tesis",
+      "icerik": "Modern antrenman tesisi ve kulüp binası açıldı. Altyapı yatırımları hız kazandı."
+    },
+    {
+      "yil": "2025",
+      "baslik": "Bugün",
+      "icerik": "Ligde lider konumda olan kulüp, alt yapı ve tesisleşme yatırımlarını sürdürüyor."
+    }
+  ]
+}

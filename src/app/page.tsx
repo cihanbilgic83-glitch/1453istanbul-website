@@ -1,7 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getMaclar, getHaberler, getPuanTablosu } from '@/lib/data';
+import { getMaclar, getHaberler, getPuanTablosu, getSiteAyarlari, getSponsorlar } from '@/lib/data';
 import type { Mac, Haber, PuanTablosu } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -49,6 +51,8 @@ export default async function HomePage() {
   const maclar = getMaclar();
   const haberler = getHaberler().slice(0, 3);
   const puanTablosu = getPuanTablosu().slice(0, 5);
+  const ayarlar = getSiteAyarlari();
+  const sponsorlar = getSponsorlar();
 
   const sonMac = maclar
     .filter((m: Mac) => m.durum === 'tamamlandi')
@@ -108,15 +112,15 @@ export default async function HomePage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-4 leading-tight drop-shadow-lg">
-            <span className="text-[#D4AF37]">1453</span> İstanbul AS
+            {ayarlar.hero.baslik || '1453 İstanbul AS'}
             <br />
             <span className="text-2xl md:text-3xl font-light text-white/80">
-              Spor Kulübü
+              {ayarlar.hero.altyazi || 'Spor Kulübü'}
             </span>
           </h1>
 
           <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-            İstanbul&apos;un fethinden ilham alan güç, azim ve tutku ile her maça çıkıyoruz.
+            {ayarlar.hero.aciklama || "İstanbul'un fethinden ilham alan güç, azim ve tutku ile her maça çıkıyoruz."}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -322,20 +326,31 @@ export default async function HomePage() {
       </section>
 
       {/* ===== SPONSORLAR ===== */}
-      <section className="py-10 bg-[#f8f9fa] border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-8">
-            Sponsorlarımız
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            {['Sponsor A', 'Sponsor B', 'Sponsor C', 'Sponsor D', 'Sponsor E'].map((s) => (
-              <div key={s} className="text-gray-300 font-bold text-xl tracking-wider hover:text-gray-400 transition-colors cursor-pointer">
-                {s}
-              </div>
-            ))}
+      {sponsorlar.length > 0 && (
+        <section className="py-10 bg-[#f8f9fa] border-t border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-8">
+              Sponsorlarımız
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+              {sponsorlar.map((s) => (
+                <a key={s.id} href={s.web || '#'} target="_blank" rel="noopener noreferrer"
+                  className="hover:opacity-80 transition-opacity">
+                  {s.logo ? (
+                    <div className="relative h-12 w-32">
+                      <Image src={s.logo} alt={s.isim} fill className="object-contain" sizes="128px" unoptimized />
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 font-bold text-lg tracking-wider hover:text-gray-600 transition-colors">
+                      {s.isim}
+                    </div>
+                  )}
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

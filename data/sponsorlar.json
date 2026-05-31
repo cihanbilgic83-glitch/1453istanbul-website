@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "isim": "Ana Sponsor",
+    "logo": "https://picsum.photos/seed/sponsor1/300/120",
+    "web": "https://example.com",
+    "kategori": "Ana Sponsor"
+  },
+  {
+    "id": "2",
+    "isim": "Forma Sponsoru",
+    "logo": "https://picsum.photos/seed/sponsor2/300/120",
+    "web": "https://example.com",
+    "kategori": "Forma Sponsoru"
+  }
+]

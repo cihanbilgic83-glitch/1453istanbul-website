@@ -1,32 +1,18 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { getSiteAyarlari, getYonetim } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Kulüp',
   description: '1453 İstanbul AS Spor Kulübü hakkında bilgiler.',
 };
 
-const tarihceMaddeleri = [
-  { yil: '2012', baslik: 'Kuruluş', icerik: '1453 İstanbul AS Spor Kulübü, İstanbul\'un fethinin sembolü olan 1453 yılından ilham alınarak kuruldu.' },
-  { yil: '2015', baslik: 'İlk Kupa', icerik: 'Bölgesel turnuvada şampiyonluk yaşayan kulüp, ilk büyük başarısını elde etti.' },
-  { yil: '2019', baslik: 'Amatör Lig', icerik: 'İstanbul Amatör Ligi\'ne yükselen kulüp, profesyonel bir yapıya kavuştu.' },
-  { yil: '2022', baslik: 'Tesis', icerik: 'Modern antrenman tesisi ve kulüp binası açıldı. Altyapı yatırımları hız kazandı.' },
-  { yil: '2025', baslik: 'Bugün', icerik: 'Ligde lider konumda olan kulüp, alt yapı ve tesisleşme yatırımlarını sürdürüyor.' },
-];
-
-const yonetimKurulu = [
-  { isim: 'Cihan Bilgiç', gorev: 'Başkan', gorsel: 'https://picsum.photos/seed/baskan1453/200/200' },
-  { isim: 'İsmail Aydın', gorev: 'Başkan Vekili', gorsel: 'https://picsum.photos/seed/yonetim1/200/200' },
-  { isim: 'Naim Erol', gorev: 'Başkan Yardımcısı', gorsel: 'https://picsum.photos/seed/yonetim2/200/200' },
-  { isim: 'Tugay Arıcan', gorev: 'Genel Sekreter', gorsel: 'https://picsum.photos/seed/yonetim3/200/200' },
-  { isim: 'Fikret Doğru', gorev: 'Sayman', gorsel: 'https://picsum.photos/seed/yonetim4/200/200' },
-  { isim: 'Cavit Erdem', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim5/200/200' },
-  { isim: 'Serdar Karaman', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim6/200/200' },
-  { isim: 'Ozan Bekir Yıldız', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim7/200/200' },
-  { isim: 'Erdem Bilgin', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim8/200/200' },
-];
+export const dynamic = 'force-dynamic';
 
 export default function KulupPage() {
+  const ayarlar = getSiteAyarlari();
+  const yonetim = getYonetim();
+
   return (
     <div className="pt-20 bg-[#f8f9fa] min-h-screen">
       {/* Banner */}
@@ -52,10 +38,7 @@ export default function KulupPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Vizyonumuz</h3>
-              <p className="text-gray-600 leading-relaxed">
-                İstanbul&apos;un futbol kültürüne katkı sağlayan, genç yetenekleri keşfedip geliştiren ve
-                ulusal arenada söz sahibi olan bir spor kulübü olmak.
-              </p>
+              <p className="text-gray-600 leading-relaxed">{ayarlar.vizyon}</p>
             </div>
             <div className="bg-[#f8f9fa] rounded-2xl p-8 border border-gray-100">
               <div className="w-12 h-12 bg-[#C0392B] rounded-xl flex items-center justify-center mb-4">
@@ -64,96 +47,108 @@ export default function KulupPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Misyonumuz</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Sporun birleştirici gücünden yararlanarak topluma değer katmak, sporcularımızı hem
-                sahada hem de hayatta en iyi şekilde yetiştirmek.
-              </p>
+              <p className="text-gray-600 leading-relaxed">{ayarlar.misyon}</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Tarihçe */}
-      <section className="py-16 bg-[#f8f9fa]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Kulüp <span className="text-[#C0392B]">Tarihçesi</span>
-            </h2>
-            <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
-          </div>
-          <div className="relative">
-            <div className="absolute left-1/2 transform -translate-x-0.5 h-full w-0.5 bg-[#1A4D2E]/20 hidden md:block" />
-            <div className="space-y-8">
-              {tarihceMaddeleri.map((madde, idx) => (
-                <div key={madde.yil} className={`flex flex-col md:flex-row gap-6 md:gap-0 items-start ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                  <div className={`md:w-1/2 ${idx % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'}`}>
-                    <div className="bg-white rounded-xl p-6 card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 transition-colors">
-                      <div className="text-[#C0392B] font-black text-xl mb-1">{madde.yil}</div>
-                      <h3 className="font-bold text-gray-900 mb-2">{madde.baslik}</h3>
-                      <p className="text-gray-600 text-sm">{madde.icerik}</p>
+      {ayarlar.tarihce.length > 0 && (
+        <section className="py-16 bg-[#f8f9fa]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Kulüp <span className="text-[#C0392B]">Tarihçesi</span>
+              </h2>
+              <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
+            </div>
+            <div className="relative">
+              <div className="absolute left-1/2 transform -translate-x-0.5 h-full w-0.5 bg-[#1A4D2E]/20 hidden md:block" />
+              <div className="space-y-8">
+                {ayarlar.tarihce.map((madde, idx) => (
+                  <div key={madde.yil} className={`flex flex-col md:flex-row gap-6 md:gap-0 items-start ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                    <div className={`md:w-1/2 ${idx % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'}`}>
+                      <div className="bg-white rounded-xl p-6 card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 transition-colors">
+                        <div className="text-[#C0392B] font-black text-xl mb-1">{madde.yil}</div>
+                        <h3 className="font-bold text-gray-900 mb-2">{madde.baslik}</h3>
+                        <p className="text-gray-600 text-sm">{madde.icerik}</p>
+                      </div>
                     </div>
+                    <div className="hidden md:flex w-0 items-center justify-center relative">
+                      <div className="w-4 h-4 rounded-full bg-[#1A4D2E] border-4 border-white shadow-md absolute" />
+                    </div>
+                    <div className="md:w-1/2" />
                   </div>
-                  <div className="hidden md:flex w-0 items-center justify-center relative">
-                    <div className="w-4 h-4 rounded-full bg-[#1A4D2E] border-4 border-white shadow-md absolute" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Başkan Mesajı */}
+      {ayarlar.baskan_mesaj && (
+        <section className="py-16 bg-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Başkan <span className="text-[#C0392B]">Mesajı</span>
+              </h2>
+              <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
+            </div>
+            <div className="bg-[#f8f9fa] rounded-2xl p-8 border border-gray-100 flex flex-col md:flex-row gap-8 items-center">
+              {ayarlar.baskan_gorsel && (
+                <div className="relative w-28 h-28 rounded-full overflow-hidden flex-shrink-0 card-shadow border-4 border-[#1A4D2E]">
+                  <Image src={ayarlar.baskan_gorsel} alt="Başkan" fill className="object-cover" sizes="112px" unoptimized />
+                </div>
+              )}
+              <div>
+                <blockquote className="text-gray-600 text-base leading-relaxed italic mb-4">
+                  &ldquo;{ayarlar.baskan_mesaj}&rdquo;
+                </blockquote>
+                {yonetim.length > 0 && (
+                  <div>
+                    <div className="font-bold text-gray-900">{yonetim[0].isim}</div>
+                    <div className="text-[#1A4D2E] text-sm font-medium">{yonetim[0].gorev}</div>
                   </div>
-                  <div className="md:w-1/2" />
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Yönetim Kurulu */}
+      {yonetim.length > 0 && (
+        <section className="py-16 bg-[#f8f9fa]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Yönetim <span className="text-[#C0392B]">Kurulu</span>
+              </h2>
+              <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+              {yonetim.map((kisi) => (
+                <div key={kisi.id} className="text-center group">
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto mb-3 card-shadow border-4 border-white group-hover:border-[#1A4D2E] transition-colors">
+                    {kisi.gorsel ? (
+                      <Image src={kisi.gorsel} alt={kisi.isim} fill className="object-cover" sizes="96px" unoptimized />
+                    ) : (
+                      <div className="w-full h-full bg-[#1A4D2E]/10 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-[#1A4D2E]">{kisi.isim.charAt(0)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="font-bold text-gray-900 text-sm">{kisi.isim}</div>
+                  <div className="text-[#1A4D2E] text-xs font-medium mt-0.5">{kisi.gorev}</div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Başkan Mesajı */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Başkan <span className="text-[#C0392B]">Mesajı</span>
-            </h2>
-            <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
-          </div>
-          <div className="bg-[#f8f9fa] rounded-2xl p-8 border border-gray-100 flex flex-col md:flex-row gap-8 items-center">
-            <div className="relative w-28 h-28 rounded-full overflow-hidden flex-shrink-0 card-shadow border-4 border-[#1A4D2E]">
-              <Image src="https://picsum.photos/seed/baskan1453/200/200" alt="Başkan" fill className="object-cover" sizes="112px" unoptimized />
-            </div>
-            <div>
-              <blockquote className="text-gray-600 text-base leading-relaxed italic mb-4">
-                &ldquo;1453 İstanbul AS olarak, İstanbul&apos;un köklü futbol geleneğini yaşatmak ve
-                geleceğe taşımak en büyük önceliğimizdir. Desteklerinizle daha güçlü büyüyoruz.&rdquo;
-              </blockquote>
-              <div>
-                <div className="font-bold text-gray-900">Cihan Bilgiç</div>
-                <div className="text-[#1A4D2E] text-sm font-medium">Kulüp Başkanı</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Yönetim Kurulu */}
-      <section className="py-16 bg-[#f8f9fa]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Yönetim <span className="text-[#C0392B]">Kurulu</span>
-            </h2>
-            <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {yonetimKurulu.map((kisi) => (
-              <div key={kisi.isim} className="text-center group">
-                <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto mb-3 card-shadow border-4 border-white group-hover:border-[#1A4D2E] transition-colors">
-                  <Image src={kisi.gorsel} alt={kisi.isim} fill className="object-cover" sizes="96px" unoptimized />
-                </div>
-                <div className="font-bold text-gray-900 text-sm">{kisi.isim}</div>
-                <div className="text-[#1A4D2E] text-xs font-medium mt-0.5">{kisi.gorev}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
