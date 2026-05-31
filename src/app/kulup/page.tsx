@@ -15,10 +15,15 @@ const tarihceMaddeleri = [
 ];
 
 const yonetimKurulu = [
-  { isim: 'Cihan Bilgiç', gorev: 'Kulüp Başkanı', gorsel: 'https://picsum.photos/seed/baskan1453/200/200' },
-  { isim: 'Ali Kaya', gorev: 'Genel Sekreter', gorsel: 'https://picsum.photos/seed/yonetim1/200/200' },
-  { isim: 'Fatma Demir', gorev: 'Mali İşler', gorsel: 'https://picsum.photos/seed/yonetim2/200/200' },
-  { isim: 'Hasan Çelik', gorev: 'Teknik Direktör', gorsel: 'https://picsum.photos/seed/yonetim3/200/200' },
+  { isim: 'Cihan Bilgiç', gorev: 'Başkan', gorsel: 'https://picsum.photos/seed/baskan1453/200/200' },
+  { isim: 'İsmail Aydın', gorev: 'Başkan Vekili', gorsel: 'https://picsum.photos/seed/yonetim1/200/200' },
+  { isim: 'Naim Erol', gorev: 'Başkan Yardımcısı', gorsel: 'https://picsum.photos/seed/yonetim2/200/200' },
+  { isim: 'Tugay Arıcan', gorev: 'Genel Sekreter', gorsel: 'https://picsum.photos/seed/yonetim3/200/200' },
+  { isim: 'Fikret Doğru', gorev: 'Sayman', gorsel: 'https://picsum.photos/seed/yonetim4/200/200' },
+  { isim: 'Cavit Erdem', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim5/200/200' },
+  { isim: 'Serdar Karaman', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim6/200/200' },
+  { isim: 'Ozan Bekir Yıldız', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim7/200/200' },
+  { isim: 'Erdem Bilgin', gorev: 'Yönetim Kurulu Üyesi', gorsel: 'https://picsum.photos/seed/yonetim8/200/200' },
 ];
 
 export default function KulupPage() {
@@ -136,7 +141,7 @@ export default function KulupPage() {
             </h2>
             <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {yonetimKurulu.map((kisi) => (
               <div key={kisi.isim} className="text-center group">
                 <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto mb-3 card-shadow border-4 border-white group-hover:border-[#1A4D2E] transition-colors">
