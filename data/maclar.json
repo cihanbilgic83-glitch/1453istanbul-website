@@ -1,0 +1,126 @@
+[
+  {
+    "id": "1",
+    "ev_sahibi": "1453 İstanbul AS",
+    "misafir": "Beyoğlu Spor",
+    "tarih": "2026-06-07",
+    "saat": "19:00",
+    "stadyum": "1453 İstanbul AS Stadı",
+    "lig": "İstanbul Amatör Ligi",
+    "durum": "gelecek",
+    "ev_gol": null,
+    "mis_gol": null,
+    "onemli": true,
+    "goller": [],
+    "asistler": [],
+    "kartlar": []
+  },
+  {
+    "id": "2",
+    "ev_sahibi": "Sarıyer SK",
+    "misafir": "1453 İstanbul AS",
+    "tarih": "2026-05-24",
+    "saat": "15:30",
+    "stadyum": "Sarıyer Stadı",
+    "lig": "İstanbul Amatör Ligi",
+    "durum": "tamamlandi",
+    "ev_gol": 1,
+    "mis_gol": 2,
+    "onemli": false,
+    "goller": [
+      { "oyuncu": "Mehmet Yılmaz", "dakika": 34, "takim": "1453 İstanbul AS" },
+      { "oyuncu": "Ali Kaya", "dakika": 67, "takim": "1453 İstanbul AS" },
+      { "oyuncu": "Emre Sarı", "dakika": 78, "takim": "Sarıyer SK" }
+    ],
+    "asistler": [
+      { "oyuncu": "Can Demir", "dakika": 34, "takim": "1453 İstanbul AS" },
+      { "oyuncu": "Hüseyin Çelik", "dakika": 67, "takim": "1453 İstanbul AS" }
+    ],
+    "kartlar": [
+      { "oyuncu": "Fatih Öztürk", "dakika": 55, "takim": "Sarıyer SK", "tur": "sari" },
+      { "oyuncu": "Burak Arslan", "dakika": 82, "takim": "1453 İstanbul AS", "tur": "sari" }
+    ]
+  },
+  {
+    "id": "3",
+    "ev_sahibi": "1453 İstanbul AS",
+    "misafir": "Kasımpaşa Amatör",
+    "tarih": "2026-05-17",
+    "saat": "18:00",
+    "stadyum": "1453 İstanbul AS Stadı",
+    "lig": "İstanbul Amatör Ligi",
+    "durum": "tamamlandi",
+    "ev_gol": 3,
+    "mis_gol": 0,
+    "onemli": false,
+    "goller": [
+      { "oyuncu": "Mehmet Yılmaz", "dakika": 12, "takim": "1453 İstanbul AS" },
+      { "oyuncu": "Mehmet Yılmaz", "dakika": 45, "takim": "1453 İstanbul AS" },
+      { "oyuncu": "Ali Kaya", "dakika": 71, "takim": "1453 İstanbul AS" }
+    ],
+    "asistler": [
+      { "oyuncu": "Can Demir", "dakika": 12, "takim": "1453 İstanbul AS" },
+      { "oyuncu": "Hüseyin Çelik", "dakika": 71, "takim": "1453 İstanbul AS" }
+    ],
+    "kartlar": [
+      { "oyuncu": "Kemal Yıldız", "dakika": 38, "takim": "Kasımpaşa Amatör", "tur": "sari" },
+      { "oyuncu": "Serkan Koç", "dakika": 60, "takim": "Kasımpaşa Amatör", "tur": "kirmizi" }
+    ]
+  },
+  {
+    "id": "4",
+    "ev_sahibi": "Şişli FK",
+    "misafir": "1453 İstanbul AS",
+    "tarih": "2026-05-10",
+    "saat": "16:00",
+    "stadyum": "Şişli Spor Tesisi",
+    "lig": "İstanbul Amatör Ligi",
+    "durum": "tamamlandi",
+    "ev_gol": 0,
+    "mis_gol": 1,
+    "onemli": false,
+    "goller": [
+      { "oyuncu": "Burak Arslan", "dakika": 88, "takim": "1453 İstanbul AS" }
+    ],
+    "asistler": [
+      { "oyuncu": "Ali Kaya", "dakika": 88, "takim": "1453 İstanbul AS" }
+    ],
+    "kartlar": [
+      { "oyuncu": "Mehmet Yılmaz", "dakika": 44, "takim": "1453 İstanbul AS", "tur": "sari" },
+      { "oyuncu": "Taner Özkan", "dakika": 70, "takim": "Şişli FK", "tur": "sari" },
+      { "oyuncu": "Taner Özkan", "dakika": 85, "takim": "Şişli FK", "tur": "kirmizi" }
+    ]
+  },
+  {
+    "id": "5",
+    "ev_sahibi": "1453 İstanbul AS",
+    "misafir": "Eminönü FK",
+    "tarih": "2026-06-14",
+    "saat": "19:00",
+    "stadyum": "1453 İstanbul AS Stadı",
+    "lig": "İstanbul Amatör Ligi",
+    "durum": "gelecek",
+    "ev_gol": null,
+    "mis_gol": null,
+    "onemli": false,
+    "goller": [],
+    "asistler": [],
+    "kartlar": []
+  },
+  {
+    "id": "6",
+    "ev_sahibi": "Fatih Spor",
+    "misafir": "1453 İstanbul AS",
+    "tarih": "2026-06-21",
+    "saat": "17:00",
+    "stadyum": "Fatih Stadyumu",
+    "lig": "İstanbul Amatör Ligi",
+    "durum": "gelecek",
+    "ev_gol": null,
+    "mis_gol": null,
+    "onemli": false,
+    "goller": [],
+    "asistler": [],
+    "kartlar": []
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "1",
+    "baslik": "Sezon Açılış Maçı",
+    "aciklama": "2025-2026 sezonu açılış maçında taraftarlarımızla buluştuk.",
+    "gorsel": "https://picsum.photos/seed/galeri1/800/600",
+    "kategori": "Maç",
+    "tarih": "2025-09-05"
+  },
+  {
+    "id": "2",
+    "baslik": "Kupa Töreni",
+    "aciklama": "Geçen sezon kazandığımız kupayı törenle aldık.",
+    "gorsel": "https://picsum.photos/seed/galeri2/800/600",
+    "kategori": "Tören",
+    "tarih": "2025-08-15"
+  },
+  {
+    "id": "3",
+    "baslik": "Antrenman Kampı",
+    "aciklama": "Sezon öncesi antrenman kampında yoğun çalışmalar yapıldı.",
+    "gorsel": "https://picsum.photos/seed/galeri3/800/600",
+    "kategori": "Antrenman",
+    "tarih": "2025-08-01"
+  },
+  {
+    "id": "4",
+    "baslik": "Taraftar Buluşması",
+    "aciklama": "Sadık taraftarlarımızla bir araya geldik.",
+    "gorsel": "https://picsum.photos/seed/galeri4/800/600",
+    "kategori": "Etkinlik",
+    "tarih": "2025-10-20"
+  },
+  {
+    "id": "5",
+    "baslik": "Kasımpaşa Maçı Gol Sevinci",
+    "aciklama": "3-0'lık galibiyetimizden unutulmaz anlar.",
+    "gorsel": "https://picsum.photos/seed/galeri5/800/600",
+    "kategori": "Maç",
+    "tarih": "2026-05-17"
+  },
+  {
+    "id": "6",
+    "baslik": "Forma Tanıtım Töreni",
+    "aciklama": "Yeni formamızın tanıtım töreninden kareler.",
+    "gorsel": "https://picsum.photos/seed/galeri6/800/600",
+    "kategori": "Tören",
+    "tarih": "2026-04-01"
+  },
+  {
+    "id": "7",
+    "baslik": "Altyapı Turnuvası Şampiyonluğu",
+    "aciklama": "U15 takımımızın şampiyonluk sevinci.",
+    "gorsel": "https://picsum.photos/seed/galeri7/800/600",
+    "kategori": "Altyapı",
+    "tarih": "2026-05-05"
+  },
+  {
+    "id": "8",
+    "baslik": "Kulüp Tesisleri",
+    "aciklama": "Modern tesislerimizden görüntüler.",
+    "gorsel": "https://picsum.photos/seed/galeri8/800/600",
+    "kategori": "Tesis",
+    "tarih": "2025-07-10"
+  },
+  {
+    "id": "9",
+    "baslik": "Sarıyer Deplasman Galibiyeti",
+    "aciklama": "Deplasmanda aldığımız 2-1'lik galibiyet.",
+    "gorsel": "https://picsum.photos/seed/galeri9/800/600",
+    "kategori": "Maç",
+    "tarih": "2026-05-24"
+  },
+  {
+    "id": "10",
+    "baslik": "Musa Demir İmza Töreni",
+    "aciklama": "Yeni transferimiz Musa Demir'in imza töreni.",
+    "gorsel": "https://picsum.photos/seed/galeri10/800/600",
+    "kategori": "Transfer",
+    "tarih": "2026-05-10"
+  },
+  {
+    "id": "11",
+    "baslik": "Taraftar Gecesi",
+    "aciklama": "Geleneksel taraftar gecesinden kareler.",
+    "gorsel": "https://picsum.photos/seed/galeri11/800/600",
+    "kategori": "Etkinlik",
+    "tarih": "2026-04-20"
+  },
+  {
+    "id": "12",
+    "baslik": "Yıl Sonu Değerlendirme",
+    "aciklama": "Sezon değerlendirme toplantısından.",
+    "gorsel": "https://picsum.photos/seed/galeri12/800/600",
+    "kategori": "Etkinlik",
+    "tarih": "2025-06-15"
+  }
+]
