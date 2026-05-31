@@ -69,19 +69,11 @@ export default async function HomePage() {
   const bizimSira = puanAll.findIndex((t: PuanTablosu) => t.takim === '1453 İstanbul AS') + 1;
   const bizimPuan = puanAll.find((t: PuanTablosu) => t.takim === '1453 İstanbul AS');
 
-  // Bu haftanın maçları
-  const bugun = new Date();
-  const haftaBasi = new Date(bugun);
-  haftaBasi.setDate(bugun.getDate() - bugun.getDay() + 1); // Pazartesi
-  haftaBasi.setHours(0, 0, 0, 0);
-  const haftaSonu = new Date(haftaBasi);
-  haftaSonu.setDate(haftaBasi.getDate() + 6); // Pazar
-  haftaSonu.setHours(23, 59, 59, 999);
-
-  const buHaftaninMaclari = maclar.filter((m: Mac) => {
-    const macTarih = new Date(m.tarih);
-    return macTarih >= haftaBasi && macTarih <= haftaSonu;
-  });
+  // Yaklaşan 3 maç
+  const yaklasanMaclar = maclar
+    .filter((m: Mac) => m.durum === 'gelecek')
+    .sort((a: Mac, b: Mac) => new Date(a.tarih).getTime() - new Date(b.tarih).getTime())
+    .slice(0, 3);
 
   return (
     <div>
@@ -156,22 +148,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ===== BU HAFTANIN MAÇLARI ===== */}
-      {buHaftaninMaclari.length > 0 && (
+      {/* ===== YAKLAŞAN MAÇLAR ===== */}
+      {yaklasanMaclar.length > 0 && (
         <section className="bg-[#1A4D2E] py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-white font-bold text-lg flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#C0392B] animate-pulse" />
-                Bu Haftanın Maçları
+                Yaklaşan Maçlar
               </h2>
-              <span className="text-green-200 text-xs">
-                {haftaBasi.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} —{' '}
-                {haftaSonu.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-              </span>
+              <Link href="/fikstur" className="text-green-200 hover:text-white text-xs transition-colors">
+                Tüm fikstür →
+              </Link>
             </div>
             <div className="flex flex-wrap justify-center gap-4">
-              {buHaftaninMaclari.map((mac: Mac) => (
+              {yaklasanMaclar.map((mac: Mac) => (
                 <div key={mac.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)] max-w-md">
                   <div className="text-green-200 text-xs mb-2 text-center">
                     {formatDate(mac.tarih)} · {mac.saat}
