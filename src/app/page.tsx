@@ -112,7 +112,7 @@ export default async function HomePage() {
           </div>
 
           <div className="inline-block bg-[#C0392B] text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest shadow-md">
-            2025 — 2026 Sezonu
+            {ayarlar.hero.sezon || '2025 — 2026 Sezonu'}
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-4 leading-tight drop-shadow-lg">

@@ -123,7 +123,7 @@ export interface SiteAyarlari {
   iletisim: { adres: string; email: string; telefon: string; harita_link: string };
   calisma_saatleri: { gun: string; saat: string }[];
   sosyal_medya: { instagram: string; twitter: string; facebook: string; youtube: string };
-  hero: { baslik: string; altyazi: string; aciklama: string };
+  hero: { baslik: string; altyazi: string; aciklama: string; sezon: string };
   footer_aciklama: string;
   vizyon: string;
   misyon: string;
@@ -136,7 +136,7 @@ const defaultAyarlar: SiteAyarlari = {
   iletisim: { adres: '', email: '', telefon: '', harita_link: '' },
   calisma_saatleri: [],
   sosyal_medya: { instagram: '', twitter: '', facebook: '', youtube: '' },
-  hero: { baslik: '1453 İSTANBUL AS', altyazi: "İstanbul'un Kalbi Biziz", aciklama: '' },
+  hero: { baslik: '1453 İSTANBUL AS', altyazi: "İstanbul'un Kalbi Biziz", aciklama: '', sezon: '2025 — 2026 Sezonu' },
   footer_aciklama: '',
   vizyon: '',
   misyon: '',

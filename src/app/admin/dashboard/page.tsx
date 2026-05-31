@@ -823,6 +823,7 @@ export default function AdminDashboard() {
                 <div>
                   <BolumBaslik title="Anasayfa Hero Bölümü" />
                   <div className="space-y-3">
+                    <FI label="Sezon Etiketi" value={siteAyarlari.hero.sezon || ''} onChange={e => ayarSet('hero.sezon', e.target.value)} placeholder="2025 — 2026 Sezonu" />
                     <FI label="Ana Başlık" value={siteAyarlari.hero.baslik} onChange={e => ayarSet('hero.baslik', e.target.value)} placeholder="1453 İSTANBUL AS" />
                     <FI label="Alt Yazı" value={siteAyarlari.hero.altyazi} onChange={e => ayarSet('hero.altyazi', e.target.value)} placeholder="İstanbul'un Kalbi Biziz" />
                     <FI label="Açıklama" value={siteAyarlari.hero.aciklama} onChange={e => ayarSet('hero.aciklama', e.target.value)} placeholder="Kısa slogan" />
