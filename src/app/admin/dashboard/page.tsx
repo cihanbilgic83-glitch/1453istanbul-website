@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import JSZip from 'jszip';
-import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj } from '@/lib/types';
+import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj, MacDegisiklik } from '@/lib/types';
 import type { SiteAyarlari, YonetimUye, Sponsor } from '@/lib/data';
 
 type Sekme = 'maclar' | 'haberler' | 'puan' | 'galeri' | 'mesajlar' | 'siteayarlari' | 'yonetim' | 'sponsorlar';
@@ -150,8 +150,36 @@ function KartListesi({ liste, takimlar, onChange }: { liste: KartItem[]; takimla
   );
 }
 
+function DegisiklikListesi({ liste, takimlar, onChange }: { liste: MacDegisiklik[]; takimlar: [string, string]; onChange: (l: MacDegisiklik[]) => void }) {
+  const ekle = () => onChange([...liste, { cikan: '', giren: '', dakika: 46, takim: takimlar[0] }]);
+  const sil = (i: number) => onChange(liste.filter((_, idx) => idx !== i));
+  const guncelle = (i: number, k: keyof MacDegisiklik, v: string | number) => { const y = [...liste]; y[i] = { ...y[i], [k]: v }; onChange(y); };
+  return (
+    <div className="bg-[#f8f9fa] rounded-xl p-3 border border-gray-200">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-gray-600">🔄 Oyuncu Değişiklikleri</span>
+        <button type="button" onClick={ekle} className="text-xs px-2 py-1 bg-[#1A4D2E] text-white rounded-lg">+ Ekle</button>
+      </div>
+      {liste.map((d, i) => (
+        <div key={i} className="grid grid-cols-12 gap-1.5 mb-2 items-center">
+          <div className="col-span-1"><input type="number" min="1" max="120" value={d.dakika} onChange={e => guncelle(i, 'dakika', Number(e.target.value))} className="w-full bg-white border border-gray-200 rounded px-1.5 py-1.5 text-xs text-center text-gray-900" placeholder="dk" /></div>
+          <div className="col-span-4">
+            <input value={d.cikan} onChange={e => guncelle(i, 'cikan', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-900" placeholder="⬇ Çıkan oyuncu" />
+          </div>
+          <div className="col-span-4">
+            <input value={d.giren} onChange={e => guncelle(i, 'giren', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-900" placeholder="⬆ Giren oyuncu" />
+          </div>
+          <div className="col-span-2"><select value={d.takim} onChange={e => guncelle(i, 'takim', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1 py-1.5 text-xs text-gray-900"><option value={takimlar[0]}>{takimlar[0].split(' ')[0]}</option><option value={takimlar[1]}>{takimlar[1].split(' ')[0]}</option></select></div>
+          <div className="col-span-1"><button type="button" onClick={() => sil(i)} className="w-full text-red-400 hover:text-red-600 text-sm font-bold">×</button></div>
+        </div>
+      ))}
+      {liste.length === 0 && <p className="text-xs text-gray-400 text-center py-1">Kayıt yok</p>}
+    </div>
+  );
+}
+
 function MacForm({ mac, onKaydet, onKapat }: { mac?: Mac; onKaydet: (d: Partial<Mac>) => void; onKapat: () => void }) {
-  const [form, setForm] = useState<Partial<Mac>>(mac || { ev_sahibi: '', misafir: '', tarih: '', saat: '19:00', stadyum: '1453 İstanbul AS Stadı', lig: 'İstanbul Amatör Ligi', durum: 'gelecek', ev_gol: null, mis_gol: null, onemli: false, goller: [], asistler: [], kartlar: [] });
+  const [form, setForm] = useState<Partial<Mac>>(mac || { ev_sahibi: '', misafir: '', tarih: '', saat: '19:00', stadyum: '1453 İstanbul AS Stadı', lig: 'İstanbul Amatör Ligi', durum: 'gelecek', ev_gol: null, mis_gol: null, onemli: false, goller: [], asistler: [], kartlar: [], degisiklikler: [] });
   const set = (k: keyof Mac, v: unknown) => setForm(f => ({ ...f, [k]: v }));
   const takimlar: [string, string] = [form.ev_sahibi || 'Ev Sahibi', form.misafir || 'Misafir'];
   return (
@@ -180,6 +208,7 @@ function MacForm({ mac, onKaydet, onKapat }: { mac?: Mac; onKaydet: (d: Partial<
           <OlayListesi baslik="⚽ Goller" liste={form.goller || []} takimlar={takimlar} onChange={v => set('goller', v)} />
           <OlayListesi baslik="🎯 Asistler" liste={form.asistler || []} takimlar={takimlar} onChange={v => set('asistler', v)} />
           <KartListesi liste={form.kartlar || []} takimlar={takimlar} onChange={v => set('kartlar', v)} />
+          <DegisiklikListesi liste={form.degisiklikler || []} takimlar={takimlar} onChange={v => set('degisiklikler', v)} />
         </>
       )}
       <div className="flex items-center gap-2">
@@ -543,6 +572,29 @@ export default function AdminDashboard() {
     setSponsorlar(p => p.filter(s => s.id !== id)); goster('Sponsor silindi');
   };
 
+  // ===== TFF SENKRONIZASYON =====
+  const [tffYukleniyor, setTffYukleniyor] = useState(false);
+  const tffdenGuncelle = async () => {
+    if (!confirm('TFF İstanbul sitesinden puan tablosu çekilecek ve mevcut veriler güncellenecek. Devam edilsin mi?')) return;
+    setTffYukleniyor(true);
+    goster('TFF\'den veri çekiliyor...');
+    try {
+      const res = await fetch('/api/sync-puan', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        goster(`✅ ${data.count} takım güncellendi`);
+        const puanRes = await fetch('/api/puan');
+        setPuanTablosu(await puanRes.json());
+      } else {
+        goster('⚠️ ' + (data.error || 'Güncelleme başarısız'));
+      }
+    } catch {
+      goster('Bağlantı hatası');
+    } finally {
+      setTffYukleniyor(false);
+    }
+  };
+
   const sekmeler = [
     { id: 'maclar' as Sekme, label: 'Maçlar', count: maclar.length, emoji: '⚽' },
     { id: 'haberler' as Sekme, label: 'Haberler', count: haberler.length, emoji: '📰' },
@@ -684,7 +736,12 @@ export default function AdminDashboard() {
             <div>
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-bold text-gray-900">Puan Tablosu <span className="text-gray-400 font-normal text-sm">({puanTablosu.length} takım)</span></h2>
-                <button onClick={() => setPuanModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Takım Ekle</button>
+                <div className="flex gap-2">
+                  <button onClick={tffdenGuncelle} disabled={tffYukleniyor} className="bg-[#1A4D2E] hover:bg-[#163d24] disabled:opacity-50 text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5">
+                    {tffYukleniyor ? <><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin inline-block" />&nbsp;Güncelleniyor...</> : <>🔄 TFF&apos;den Güncelle</>}
+                  </button>
+                  <button onClick={() => setPuanModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Takım Ekle</button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

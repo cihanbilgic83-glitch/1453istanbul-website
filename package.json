@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",
+    "cheerio": "^1.2.0",
     "iron-session": "^8.0.4",
     "jszip": "^3.10.1",
     "lucide-react": "^0.460.0",

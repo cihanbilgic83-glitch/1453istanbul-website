@@ -11,6 +11,13 @@ export interface MacKart {
   tur: 'sari' | 'kirmizi';
 }
 
+export interface MacDegisiklik {
+  cikan: string;
+  giren: string;
+  dakika: number;
+  takim: string;
+}
+
 export interface Mac {
   id: string;
   ev_sahibi: string;
@@ -26,6 +33,7 @@ export interface Mac {
   goller?: MacOlay[];
   asistler?: MacOlay[];
   kartlar?: MacKart[];
+  degisiklikler?: MacDegisiklik[];
 }
 
 export interface Haber {
