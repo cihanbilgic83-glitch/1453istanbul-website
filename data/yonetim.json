@@ -1,11 +1,146 @@
 [
-  { "id": "1", "isim": "Cihan Bilgiç", "gorev": "Başkan", "gorsel": "https://picsum.photos/seed/baskan1453/200/200" },
-  { "id": "2", "isim": "İsmail Aydın", "gorev": "Başkan Vekili", "gorsel": "https://picsum.photos/seed/yonetim1/200/200" },
-  { "id": "3", "isim": "Naim Erol", "gorev": "Başkan Yardımcısı", "gorsel": "https://picsum.photos/seed/yonetim2/200/200" },
-  { "id": "4", "isim": "Tugay Arıcan", "gorev": "Genel Sekreter", "gorsel": "https://picsum.photos/seed/yonetim3/200/200" },
-  { "id": "5", "isim": "Fikret Doğru", "gorev": "Sayman", "gorsel": "https://picsum.photos/seed/yonetim4/200/200" },
-  { "id": "6", "isim": "Cavit Erdem", "gorev": "Yönetim Kurulu Üyesi", "gorsel": "https://picsum.photos/seed/yonetim5/200/200" },
-  { "id": "7", "isim": "Serdar Karaman", "gorev": "Yönetim Kurulu Üyesi", "gorsel": "https://picsum.photos/seed/yonetim6/200/200" },
-  { "id": "8", "isim": "Ozan Bekir Yıldız", "gorev": "Yönetim Kurulu Üyesi", "gorsel": "https://picsum.photos/seed/yonetim7/200/200" },
-  { "id": "9", "isim": "Erdem Bilgin", "gorev": "Yönetim Kurulu Üyesi", "gorsel": "https://picsum.photos/seed/yonetim8/200/200" }
+  {
+    "id": "1",
+    "isim": "Cihan BİLGİÇ",
+    "gorev": "Başkan",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "2",
+    "isim": "İsmail AYDIN",
+    "gorev": "Başkan Vekili",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "3",
+    "isim": "Naim EROL",
+    "gorev": "Başkan Yardımcısı",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "4",
+    "isim": "Tugay ARICAN",
+    "gorev": "Genel Sekreter",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "5",
+    "isim": "Fikret DOĞRU",
+    "gorev": "Sayman",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "6",
+    "isim": "Cavit ERDEM",
+    "gorev": "Altyapı Sorumlusu",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "7",
+    "isim": "Serdar KARAMAN",
+    "gorev": "Genel Kaptan",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "8",
+    "isim": "Ozan Bekir YILDIZ",
+    "gorev": "Başkan Yardımcısı",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "id": "9",
+    "isim": "Erdem BİLGİN",
+    "gorev": "Futbol Şube Sorumlusu",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg"
+  },
+  {
+    "isim": "Adnan BİLGİÇ",
+    "gorev": "Y. Yönetim Kuru Üyesi",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304132081"
+  },
+  {
+    "isim": "Ayhan BİLGİÇ",
+    "gorev": "Y. Yönetim Kuru Üyesi",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304164034"
+  },
+  {
+    "isim": "Vedat KUTUCU",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304197480"
+  },
+  {
+    "isim": "DAVUT ERDAL",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304321125"
+  },
+  {
+    "isim": "Nursima BİLGİÇ",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304359134"
+  },
+  {
+    "isim": "Berat BİLGİN",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304384891"
+  },
+  {
+    "isim": "Erdinç BİLGİN",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304400274"
+  },
+  {
+    "isim": "Eyüp Can SERBEST",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304439833"
+  },
+  {
+    "isim": "Fırat EKİN",
+    "gorev": "Y. YÖNETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304451960"
+  },
+  {
+    "isim": "Mustafa ÇELİK",
+    "gorev": "DENETİM KURULU BAŞKANI",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304474268"
+  },
+  {
+    "isim": "Ertuğrul ÜSKÜP",
+    "gorev": "DENETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304510474"
+  },
+  {
+    "isim": "Berkehan DOĞRU",
+    "gorev": "DENETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304522180"
+  },
+  {
+    "isim": "Cihan ÜSKÜP",
+    "gorev": "Y. DENETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304551497"
+  },
+  {
+    "isim": "Ahmet ÖZDEMİR",
+    "gorev": "Y. DENETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304561309"
+  },
+  {
+    "isim": "Kadir DOĞRU",
+    "gorev": "Y. DENETİM KURULU ÜYESİ",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
+    "id": "1780304570821"
+  }
 ]

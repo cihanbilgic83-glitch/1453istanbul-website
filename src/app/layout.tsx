@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import ConditionalFooter from '@/components/layout/ConditionalFooter';
 
 export const metadata: Metadata = {
   title: {
@@ -29,7 +30,7 @@ export default function RootLayout({
       <body className="bg-[#f8f9fa] text-gray-900 min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1">{children}</main>
-        <Footer />
+        <ConditionalFooter><Footer /></ConditionalFooter>
       </body>
     </html>
   );

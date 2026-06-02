@@ -30,6 +30,8 @@ export default function Navbar() {
     setIsOpen(false);
   }, [pathname]);
 
+  if (pathname.startsWith('/admin')) return null;
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[#1A4D2E] ${scrolled ? 'shadow-lg shadow-green-900/30' : ''}`}>
       {/* Üst kırmızı şerit */}

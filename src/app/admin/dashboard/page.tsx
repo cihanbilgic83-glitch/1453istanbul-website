@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import JSZip from 'jszip';
 import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj } from '@/lib/types';
 import type { SiteAyarlari, YonetimUye, Sponsor } from '@/lib/data';
 
@@ -361,6 +362,28 @@ export default function AdminDashboard() {
     router.push('/admin');
   };
 
+  const zipVeIndir = async () => {
+    goster('Veriler hazırlanıyor...');
+    try {
+      const res = await fetch('/api/export');
+      if (!res.ok) { goster('Export başarısız.'); return; }
+      const data = await res.json();
+      const { exportedAt, ...dosyalar } = data;
+      const zip = new JSZip();
+      for (const [isim, icerik] of Object.entries(dosyalar)) {
+        zip.file(`${isim}.json`, JSON.stringify(icerik, null, 2));
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const tarih = new Date(exportedAt).toISOString().slice(0, 10);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `1453istanbul-backup-${tarih}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      goster('ZIP indirildi ✓');
+    } catch { goster('Hata oluştu.'); }
+  };
+
   // ===== MAÇ CRUD =====
   const macKaydet = async (data: Partial<Mac>) => {
     if (macModal.mac) {
@@ -566,6 +589,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex gap-2">
+            <button onClick={zipVeIndir} className="text-yellow-200 hover:text-white text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="Tüm verileri ZIP olarak indir">📦 Yedekle</button>
             <a href="/" target="_blank" className="text-green-100 hover:text-white text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">Siteyi Görüntüle</a>
             <button onClick={cikisYap} className="text-green-100 hover:text-red-200 text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-red-500/20 transition-colors">Çıkış</button>
           </div>

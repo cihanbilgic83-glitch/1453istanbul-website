@@ -12,5 +12,12 @@
     "logo": "https://picsum.photos/seed/sponsor2/300/120",
     "web": "https://example.com",
     "kategori": "Forma Sponsoru"
+  },
+  {
+    "isim": "TEST TEST",
+    "logo": "",
+    "web": "",
+    "kategori": "Ana Sponsor",
+    "id": "1780261886152"
   }
 ]

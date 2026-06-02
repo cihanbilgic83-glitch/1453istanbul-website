@@ -1,9 +1,9 @@
 [
   {
     "id": "1",
-    "baslik": "Sezon Açılış Maçı",
+    "baslik": "U18",
     "aciklama": "2025-2026 sezonu açılış maçında taraftarlarımızla buluştuk.",
-    "gorsel": "https://picsum.photos/seed/galeri1/800/600",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
     "kategori": "Maç",
     "tarih": "2025-09-05"
   },
@@ -11,25 +11,17 @@
     "id": "2",
     "baslik": "Kupa Töreni",
     "aciklama": "Geçen sezon kazandığımız kupayı törenle aldık.",
-    "gorsel": "https://picsum.photos/seed/galeri2/800/600",
+    "gorsel": "https://i.ibb.co/fdWLg2DD/tmpuymuywzk.webp",
     "kategori": "Tören",
     "tarih": "2025-08-15"
   },
   {
     "id": "3",
-    "baslik": "Antrenman Kampı",
+    "baslik": "Antrenman",
     "aciklama": "Sezon öncesi antrenman kampında yoğun çalışmalar yapıldı.",
-    "gorsel": "https://picsum.photos/seed/galeri3/800/600",
+    "gorsel": "https://i.ibb.co/5gw6JjVv/istabnul-1453-logo.jpg",
     "kategori": "Antrenman",
-    "tarih": "2025-08-01"
-  },
-  {
-    "id": "4",
-    "baslik": "Taraftar Buluşması",
-    "aciklama": "Sadık taraftarlarımızla bir araya geldik.",
-    "gorsel": "https://picsum.photos/seed/galeri4/800/600",
-    "kategori": "Etkinlik",
-    "tarih": "2025-10-20"
+    "tarih": "2026-04-10"
   },
   {
     "id": "5",
