@@ -141,6 +141,18 @@ export async function saveTffDurum(data: TffDurum): Promise<void> {
   await setObj('tff-durum', data);
 }
 
+// Bilgisayardaki TFF programının siteye bağlanırken kullandığı gizli anahtar
+export async function getTffKopruAnahtari(): Promise<string | null> {
+  try {
+    const kayit = await redis.get<{ anahtar?: string }>('tff-kopru-anahtari');
+    const a = kayit && typeof kayit === 'object' ? kayit.anahtar : null;
+    return typeof a === 'string' && a.length >= 32 ? a : null;
+  } catch { return null; }
+}
+export async function saveTffKopruAnahtari(anahtar: string): Promise<void> {
+  await setObj('tff-kopru-anahtari', { anahtar, olusturma: new Date().toISOString() });
+}
+
 // ---- GALERİ ----
 export async function getGaleri(): Promise<GaleriOge[]> {
   return getList<GaleriOge>('galeri', 'galeri.json');

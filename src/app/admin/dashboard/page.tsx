@@ -651,32 +651,30 @@ export default function AdminDashboard() {
     setSponsorlar(p => p.filter(s => s.id !== id)); goster('Sponsor silindi');
   });
 
-  // ===== TFF SENKRONIZASYON =====
+  // ===== TFF GÜNCELLEME =====
+  // TFF İstanbul sitemizin sunucusunu engellediği için veriler bilgisayardaki programla gönderilir.
   const [tffYukleniyor, setTffYukleniyor] = useState(false);
-  const tffdenGuncelle = async (tumSezon = false) => {
-    const soru = tumSezon
-      ? 'Üç takımın bütün sezonu TFF İstanbul\'dan yeniden çekilecek. Bu 1-2 dakika sürebilir. Devam edilsin mi?'
-      : 'Puan tabloları, fikstür, skorlar ve maç detayları TFF İstanbul\'dan güncellenecek. Devam edilsin mi?';
-    if (!confirm(soru)) return;
+  const tffVerileriniYenile = async () => {
     setTffYukleniyor(true);
-    goster('TFF\'den veri çekiliyor, bu biraz sürebilir...');
     try {
-      const res = await fetch('/api/sync-puan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tumSezon }) });
-      if (res.status === 401) throw new Error('Oturum süresi doldu. Yeni sekmede tekrar giriş yapın.');
-      const data = await res.json();
-      if (data.durum) setTffDurum(data.durum);
       const [macRes, puanRes, tffRes] = await Promise.all([fetch('/api/maclar'), fetch(puanAdresi), fetch('/api/tff')]);
+      if (tffRes.status === 401) throw new Error('Oturum süresi doldu. Yeni sekmede tekrar giriş yapın.');
       setMaclar(await macRes.json());
       setPuanTablosu(await puanRes.json());
-      if (tffRes.ok) setTffKaynaklar((await tffRes.json()).kaynaklar);
-      if (data.success) goster('TFF verileri güncellendi');
-      else goster(data.error || 'Bazı takımlar güncellenemedi; ayrıntı TFF kutusunda.', 'hata');
+      const t = await tffRes.json();
+      setTffKaynaklar(t.kaynaklar); setTffDurum(t.durum);
+      goster('Panel güncel verilerle yenilendi');
     } catch (err) {
       goster(err instanceof Error ? err.message : 'Bağlantı hatası', 'hata');
     } finally {
       setTffYukleniyor(false);
     }
   };
+  const kopruAnahtariniYenile = guvenli(async () => {
+    if (!confirm('Program anahtarı yenilenecek. Daha önce indirilen programlar çalışmayı bırakır; programı yeniden indirip bilgisayara kurmanız gerekir. Devam edilsin mi?')) return;
+    await istek('/api/tff/kopru/yenile', 'POST');
+    goster('Anahtar yenilendi. Programı yeniden indirin.');
+  });
   const tffAdresleriniKaydet = guvenli(async () => {
     const sonuc = await istek<{ kaynaklar: TffKaynak[] }>('/api/tff', 'PUT', tffKaynaklar);
     setTffKaynaklar(sonuc.kaynaklar);
@@ -839,16 +837,19 @@ export default function AdminDashboard() {
           {aktifSekme === 'puan' && (
             <div>
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="font-bold text-gray-900">TFF İstanbul otomatik güncelleme</h2>
+                <h2 className="font-bold text-gray-900">TFF İstanbul güncellemesi</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => tffdenGuncelle(true)} disabled={tffYukleniyor} className="bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-gray-600 text-xs px-3 py-2 rounded-lg font-medium transition-colors" title="Bütün haftaları ve oynanmış tüm maçların detaylarını yeniden çeker">Tüm sezonu yeniden çek</button>
-                  <button onClick={() => tffdenGuncelle(false)} disabled={tffYukleniyor} className="bg-[#1A4D2E] hover:bg-[#163d24] disabled:opacity-50 text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5">
-                    {tffYukleniyor ? <><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin inline-block" />&nbsp;Güncelleniyor...</> : <>🔄 Şimdi güncelle</>}
-                  </button>
+                  <button onClick={tffVerileriniYenile} disabled={tffYukleniyor} className="bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-gray-600 text-xs px-3 py-2 rounded-lg font-medium transition-colors" title="Program çalıştıktan sonra paneldeki tabloları ve durumu yeniler">{tffYukleniyor ? 'Yenileniyor...' : '↻ Paneli yenile'}</button>
+                  <a href="/api/tff/kopru/indir" className="bg-[#1A4D2E] hover:bg-[#163d24] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">⬇ Windows programını indir</a>
                 </div>
               </div>
               <div className="p-4 border-b border-gray-100 space-y-3">
-                <p className="text-xs text-gray-500">Site her gün 08:00 ve 20:00&apos;de TFF İstanbul&apos;dan puan tablosunu, fikstürü, skorları ve maç detaylarını (gol, kart, değişiklik, kadro, hakem) kendisi çeker. A takımın grubu, fikstür TFF&apos;de yayınlanınca kendiliğinden bulunur. Yeni sezonda U17 ve U14 adreslerini TFF&apos;deki yeni grup sayfasıyla değiştirin.</p>
+                <div className="text-xs text-gray-600 bg-[#1A4D2E]/5 rounded-lg px-3 py-2.5 leading-relaxed">
+                  TFF İstanbul, sitemizin sunucusundan gelen bağlantıları kabul etmiyor. Bu yüzden veriler Türkiye&apos;deki bir bilgisayardan gönderilir:
+                  <b> 1)</b> &quot;Windows programını indir&quot;e basın. <b>2)</b> İnen <code>1453-TFF-Guncelle.bat</code> dosyasına çift tıklayın; puan tabloları, fikstür, skorlar ve maç detayları güncellenir.
+                  <b> 3)</b> İlk çalıştırmada &quot;Her gün 08:00 ve 20:00&apos;de kendiliğinden çalışsın mı?&quot; sorusuna &quot;E&quot; yazıp Enter&apos;a basarsanız bundan sonra kendisi çalışır.
+                  A takımın grubu, fikstür TFF&apos;de yayınlanınca kendiliğinden bulunur. Yeni sezonda U17 ve U14 adreslerini TFF&apos;deki yeni grup sayfasıyla değiştirin.
+                </div>
                 {TAKIMLAR.map(t => {
                   const kaynak = tffKaynaklar.find(k => k.takim === t.kod);
                   const d = tffDurum.takimlar[t.kod];
@@ -859,12 +860,13 @@ export default function AdminDashboard() {
                         onChange={e => setTffKaynaklar(l => l.map(k => k.takim === t.kod ? { ...k, adres: e.target.value } : k))}
                         className="w-full bg-[#f8f9fa] border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:border-[#1A4D2E] focus:outline-none" />
                       <div className={`text-xs ${!d ? 'text-gray-400' : d.basarili ? 'text-green-700' : 'text-red-600'}`}>
-                        {!d ? 'Henüz güncellenmedi' : <>{d.basarili ? '✓' : '⚠'} {d.mesaj} <span className="text-gray-400">· {new Date(d.zaman).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></>}
+                        {!d ? 'Henüz güncellenmedi' : <>{d.basarili ? '✓' : '⚠'} {d.mesaj} <span className="text-gray-400">· {new Date(d.zaman).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}{d.kaynak === 'bilgisayar' ? ' · bilgisayardan' : d.kaynak === 'sunucu' ? ' · sunucudan' : ''}</span></>}
                       </div>
                     </div>
                   );
                 })}
-                <div className="flex justify-end">
+                <div className="flex justify-between gap-2">
+                  <button onClick={kopruAnahtariniYenile} className="text-xs px-3 py-1.5 text-gray-400 hover:text-red-600 transition-colors" title="Program bir yerde unutulduysa ya da paylaşıldıysa eski programları geçersiz kılar">Program anahtarını yenile</button>
                   <button onClick={tffAdresleriniKaydet} className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">Adresleri kaydet</button>
                 </div>
               </div>
