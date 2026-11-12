@@ -1,28 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { tffSenkronla } from '@/lib/tff/senkron';
 
-// Bu endpoint cron-job.org tarafından günde 2 kez çağrılır (08:00 ve 20:00)
-// Render.com'a CRON_SECRET env değişkeni eklenmelidir
+// cron-job.org bu adresi çağırır (günde 2 kez: 08:00 ve 20:00).
+// Güncelleme 30-60 saniye sürebildiği için yanıt hemen döner, iş arka planda tamamlanır.
+// Render'da CRON_SECRET ortam değişkeni tanımlı olmalıdır.
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret');
-
-  if (!secret || secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
   }
 
-  try {
-    // sync-puan route'unu dahili olarak çağır
-    const baseUrl = req.nextUrl.origin;
-    const res = await fetch(`${baseUrl}/api/sync-puan`, {
-      method: 'POST',
-      headers: {
-        'x-cron-secret': secret,
-      },
-    });
+  after(async () => {
+    try { await tffSenkronla(); }
+    catch (err) { console.error('TFF zamanlanmış güncelleme hatası:', err); }
+  });
 
-    const data = await res.json();
-    return NextResponse.json({ ...data, cron: true, timestamp: new Date().toISOString() });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return NextResponse.json({ basladi: true, cron: true, timestamp: new Date().toISOString() });
 }

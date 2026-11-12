@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import JSZip from 'jszip';
-import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj, MacDegisiklik } from '@/lib/types';
+import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj, MacDegisiklik, TakimKodu, TffKaynak, TffDurum } from '@/lib/types';
+import { TAKIMLAR, macTakimi, takimTanimi } from '@/lib/takimlar';
 import type { SiteAyarlari, YonetimUye, Sponsor } from '@/lib/data';
 
 import { slugify } from '@/lib/slug';
@@ -220,8 +221,14 @@ function MacForm({ mac, onKaydet, onKapat }: { mac?: Mac; onKaydet: (d: Partial<
         <FI label="Tarih" required type="date" value={form.tarih || ''} onChange={e => set('tarih', e.target.value)} />
         <FI label="Saat" required value={form.saat || ''} onChange={e => set('saat', e.target.value)} />
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <FS label="Takım" required value={form.takim || 'a'} onChange={e => set('takim', e.target.value as TakimKodu)}>
+          {TAKIMLAR.map(t => <option key={t.kod} value={t.kod}>{t.ad}</option>)}
+        </FS>
+        <FI label="Lig" value={form.lig || ''} onChange={e => set('lig', e.target.value)} />
+      </div>
       <FI label="Stadyum" value={form.stadyum || ''} onChange={e => set('stadyum', e.target.value)} />
-      <FI label="Lig" value={form.lig || ''} onChange={e => set('lig', e.target.value)} />
+      {form.kaynak === 'tff' && <p className="text-xs text-[#1A4D2E] bg-[#1A4D2E]/5 rounded-lg px-3 py-2">Bu maç TFF İstanbul&apos;dan otomatik güncelleniyor. Skor, tarih ve goller bir sonraki güncellemede TFF&apos;deki hâline döner; &quot;Önemli maç&quot; işareti ve asistler korunur.</p>}
       <FS label="Durum" required value={form.durum || 'gelecek'} onChange={e => set('durum', e.target.value as Mac['durum'])}>
         <option value="gelecek">Gelecek</option>
         <option value="tamamlandi">Tamamlandı</option>
@@ -390,6 +397,10 @@ export default function AdminDashboard() {
   const [maclar, setMaclar] = useState<Mac[]>([]);
   const [haberler, setHaberler] = useState<Haber[]>([]);
   const [puanTablosu, setPuanTablosu] = useState<PuanTablosu[]>([]);
+  const [puanTakim, setPuanTakim] = useState<TakimKodu>('a');
+  const [macFiltre, setMacFiltre] = useState<TakimKodu | 'hepsi'>('hepsi');
+  const [tffKaynaklar, setTffKaynaklar] = useState<TffKaynak[]>([]);
+  const [tffDurum, setTffDurum] = useState<TffDurum>({ takimlar: {} });
   const [galeri, setGaleri] = useState<GaleriOge[]>([]);
   const [mesajlar, setMesajlar] = useState<Mesaj[]>([]);
 
@@ -436,6 +447,8 @@ export default function AdminDashboard() {
       setSiteAyarlari(await ayarRes.json());
       setYonetim(await yonetimRes.json());
       setSponsorlar(await sponsorRes.json());
+      const tffRes = await fetch('/api/tff');
+      if (tffRes.ok) { const t = await tffRes.json(); setTffKaynaklar(t.kaynaklar); setTffDurum(t.durum); }
     } catch { router.push('/admin'); }
     finally { setLoading(false); }
   }, [router]);
@@ -518,15 +531,20 @@ export default function AdminDashboard() {
   });
 
   // ===== PUAN CRUD =====
+  const puanAdresi = `/api/puan?takim=${puanTakim}`;
+  const puanTakimiSec = guvenli(async (takim: TakimKodu) => {
+    setPuanTakim(takim);
+    setPuanTablosu(await istek<PuanTablosu[]>(`/api/puan?takim=${takim}`));
+  });
   const puanKaydet = guvenli(async (data: Partial<PuanTablosu>) => {
     if (puanModal.takim) {
       const yeni = puanTablosu.map(t => t.id === puanModal.takim!.id ? { ...t, ...data } : t);
-      await istek('/api/puan', 'PUT', yeni);
+      await istek(puanAdresi, 'PUT', yeni);
       setPuanTablosu(yeni); goster('Takım güncellendi');
     } else {
       const yeniTakim = { ...data, id: Date.now().toString() } as PuanTablosu;
       const yeni = [...puanTablosu, yeniTakim].sort((a, b) => b.puan - a.puan);
-      await istek('/api/puan', 'PUT', yeni);
+      await istek(puanAdresi, 'PUT', yeni);
       setPuanTablosu(yeni); goster('Takım eklendi');
     }
     setPuanModal({ acik: false });
@@ -535,7 +553,7 @@ export default function AdminDashboard() {
   const puanSil = guvenli(async (id: string) => {
     if (!confirm('Bu takımı silmek istediğinizden emin misiniz?')) return;
     const yeni = puanTablosu.filter(t => t.id !== id);
-    await istek('/api/puan', 'PUT', yeni);
+    await istek(puanAdresi, 'PUT', yeni);
     setPuanTablosu(yeni); goster('Takım silindi');
   });
 
@@ -635,31 +653,40 @@ export default function AdminDashboard() {
 
   // ===== TFF SENKRONIZASYON =====
   const [tffYukleniyor, setTffYukleniyor] = useState(false);
-  const tffdenGuncelle = async () => {
-    if (!confirm('TFF İstanbul sitesinden puan tablosu çekilecek ve mevcut veriler güncellenecek. Devam edilsin mi?')) return;
+  const tffdenGuncelle = async (tumSezon = false) => {
+    const soru = tumSezon
+      ? 'Üç takımın bütün sezonu TFF İstanbul\'dan yeniden çekilecek. Bu 1-2 dakika sürebilir. Devam edilsin mi?'
+      : 'Puan tabloları, fikstür, skorlar ve maç detayları TFF İstanbul\'dan güncellenecek. Devam edilsin mi?';
+    if (!confirm(soru)) return;
     setTffYukleniyor(true);
-    goster('TFF\'den veri çekiliyor...');
+    goster('TFF\'den veri çekiliyor, bu biraz sürebilir...');
     try {
-      const res = await fetch('/api/sync-puan', { method: 'POST' });
+      const res = await fetch('/api/sync-puan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tumSezon }) });
+      if (res.status === 401) throw new Error('Oturum süresi doldu. Yeni sekmede tekrar giriş yapın.');
       const data = await res.json();
-      if (data.success) {
-        goster(`✅ ${data.count} takım güncellendi`);
-        const puanRes = await fetch('/api/puan');
-        setPuanTablosu(await puanRes.json());
-      } else {
-        goster('⚠️ ' + (data.error || 'Güncelleme başarısız'));
-      }
-    } catch {
-      goster('Bağlantı hatası');
+      if (data.durum) setTffDurum(data.durum);
+      const [macRes, puanRes, tffRes] = await Promise.all([fetch('/api/maclar'), fetch(puanAdresi), fetch('/api/tff')]);
+      setMaclar(await macRes.json());
+      setPuanTablosu(await puanRes.json());
+      if (tffRes.ok) setTffKaynaklar((await tffRes.json()).kaynaklar);
+      if (data.success) goster('TFF verileri güncellendi');
+      else goster(data.error || 'Bazı takımlar güncellenemedi; ayrıntı TFF kutusunda.', 'hata');
+    } catch (err) {
+      goster(err instanceof Error ? err.message : 'Bağlantı hatası', 'hata');
     } finally {
       setTffYukleniyor(false);
     }
   };
+  const tffAdresleriniKaydet = guvenli(async () => {
+    const sonuc = await istek<{ kaynaklar: TffKaynak[] }>('/api/tff', 'PUT', tffKaynaklar);
+    setTffKaynaklar(sonuc.kaynaklar);
+    goster('TFF adresleri kaydedildi');
+  });
 
   const sekmeler = [
     { id: 'maclar' as Sekme, label: 'Maçlar', count: maclar.length, emoji: '⚽' },
     { id: 'haberler' as Sekme, label: 'Haberler', count: haberler.length, emoji: '📰' },
-    { id: 'puan' as Sekme, label: 'Puan Tablosu', count: puanTablosu.length, emoji: '🏆' },
+    { id: 'puan' as Sekme, label: 'Puan & TFF', count: puanTablosu.length, emoji: '🏆' },
     { id: 'galeri' as Sekme, label: 'Galeri', count: galeri.length, emoji: '📸' },
     { id: 'mesajlar' as Sekme, label: 'Mesajlar', count: mesajlar.filter(m => !m.okundu).length, emoji: '✉️' },
     { id: 'siteayarlari' as Sekme, label: 'Site Ayarları', count: null, emoji: '⚙️' },
@@ -745,13 +772,24 @@ export default function AdminDashboard() {
                 <h2 className="font-bold text-gray-900">Maç Listesi <span className="text-gray-400 font-normal text-sm">({maclar.length})</span></h2>
                 <button onClick={() => setMacModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Maç Ekle</button>
               </div>
+              <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap gap-2">
+                {([['hepsi', 'Tümü'], ...TAKIMLAR.map(t => [t.kod, t.ad])] as [TakimKodu | 'hepsi', string][]).map(([kod, ad]) => (
+                  <button key={kod} onClick={() => setMacFiltre(kod)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${macFiltre === kod ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                    {ad} <span className="opacity-60">({kod === 'hepsi' ? maclar.length : maclar.filter(m => macTakimi(m) === kod).length})</span>
+                  </button>
+                ))}
+              </div>
               <div className="divide-y divide-gray-100">
                 {maclar.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">Henüz maç yok.</div> :
-                  maclar.sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime()).map(mac => (
+                  [...maclar].filter(m => macFiltre === 'hepsi' || macTakimi(m) === macFiltre).sort((a, b) => (b.tarih || '9999').localeCompare(a.tarih || '9999')).map(mac => (
                     <div key={mac.id} className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50">
                       <div className="flex-1 min-w-0">
-                        <div className="text-gray-900 text-sm font-semibold">{mac.ev_sahibi} <span className="text-gray-400 font-normal">vs</span> {mac.misafir}</div>
-                        <div className="text-gray-400 text-xs mt-0.5">{mac.tarih} {mac.saat} · {mac.lig}</div>
+                        <div className="text-gray-900 text-sm font-semibold flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#1A4D2E]/10 text-[#1A4D2E]">{takimTanimi(macTakimi(mac)).ad}</span>
+                          {mac.kaynak === 'tff' && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600" title="TFF İstanbul'dan otomatik güncelleniyor">TFF</span>}
+                          <span>{mac.ev_sahibi} <span className="text-gray-400 font-normal">vs</span> {mac.misafir}</span>
+                        </div>
+                        <div className="text-gray-400 text-xs mt-0.5">{mac.tarih || 'Tarih belirlenmedi'} {mac.saat}{mac.hafta ? ` · ${mac.hafta}. hafta` : ''} · {mac.lig}</div>
                         {mac.durum === 'tamamlandi' && <div className="text-[#1A4D2E] text-xs mt-0.5 font-bold">{mac.ev_gol} - {mac.mis_gol}</div>}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -801,13 +839,45 @@ export default function AdminDashboard() {
           {aktifSekme === 'puan' && (
             <div>
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="font-bold text-gray-900">Puan Tablosu <span className="text-gray-400 font-normal text-sm">({puanTablosu.length} takım)</span></h2>
+                <h2 className="font-bold text-gray-900">TFF İstanbul otomatik güncelleme</h2>
                 <div className="flex gap-2">
-                  <button onClick={tffdenGuncelle} disabled={tffYukleniyor} className="bg-[#1A4D2E] hover:bg-[#163d24] disabled:opacity-50 text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5">
-                    {tffYukleniyor ? <><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin inline-block" />&nbsp;Güncelleniyor...</> : <>🔄 TFF&apos;den Güncelle</>}
+                  <button onClick={() => tffdenGuncelle(true)} disabled={tffYukleniyor} className="bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-gray-600 text-xs px-3 py-2 rounded-lg font-medium transition-colors" title="Bütün haftaları ve oynanmış tüm maçların detaylarını yeniden çeker">Tüm sezonu yeniden çek</button>
+                  <button onClick={() => tffdenGuncelle(false)} disabled={tffYukleniyor} className="bg-[#1A4D2E] hover:bg-[#163d24] disabled:opacity-50 text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5">
+                    {tffYukleniyor ? <><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin inline-block" />&nbsp;Güncelleniyor...</> : <>🔄 Şimdi güncelle</>}
                   </button>
-                  <button onClick={() => setPuanModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Takım Ekle</button>
                 </div>
+              </div>
+              <div className="p-4 border-b border-gray-100 space-y-3">
+                <p className="text-xs text-gray-500">Site her gün 08:00 ve 20:00&apos;de TFF İstanbul&apos;dan puan tablosunu, fikstürü, skorları ve maç detaylarını (gol, kart, değişiklik, kadro, hakem) kendisi çeker. A takımın grubu, fikstür TFF&apos;de yayınlanınca kendiliğinden bulunur. Yeni sezonda U17 ve U14 adreslerini TFF&apos;deki yeni grup sayfasıyla değiştirin.</p>
+                {TAKIMLAR.map(t => {
+                  const kaynak = tffKaynaklar.find(k => k.takim === t.kod);
+                  const d = tffDurum.takimlar[t.kod];
+                  return (
+                    <div key={t.kod} className="grid grid-cols-1 md:grid-cols-[90px_1fr_1fr] gap-2 md:items-center">
+                      <div className="text-sm font-semibold text-gray-800">{t.ad}</div>
+                      <input value={kaynak?.adres ?? ''} placeholder={t.kod === 'a' ? 'Boş bırakın: fikstür yayınlanınca kendiliğinden bulunur' : 'https://tffistanbul.org/puantaj-ve-fikstur/...'}
+                        onChange={e => setTffKaynaklar(l => l.map(k => k.takim === t.kod ? { ...k, adres: e.target.value } : k))}
+                        className="w-full bg-[#f8f9fa] border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:border-[#1A4D2E] focus:outline-none" />
+                      <div className={`text-xs ${!d ? 'text-gray-400' : d.basarili ? 'text-green-700' : 'text-red-600'}`}>
+                        {!d ? 'Henüz güncellenmedi' : <>{d.basarili ? '✓' : '⚠'} {d.mesaj} <span className="text-gray-400">· {new Date(d.zaman).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></>}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-end">
+                  <button onClick={tffAdresleriniKaydet} className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">Adresleri kaydet</button>
+                </div>
+              </div>
+              <div className="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-bold text-gray-900">Puan Tablosu <span className="text-gray-400 font-normal text-sm">({puanTablosu.length} takım)</span></h2>
+                  <div className="flex gap-1">
+                    {TAKIMLAR.map(t => (
+                      <button key={t.kod} onClick={() => puanTakimiSec(t.kod)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${puanTakim === t.kod ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{t.ad}</button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={() => setPuanModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Takım Ekle</button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -826,7 +896,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {puanTablosu.map((t, idx) => (
-                      <tr key={t.id} className={`border-b border-gray-100 ${t.takim === '1453 İstanbul AS' ? 'bg-[#1A4D2E]/5 font-semibold' : ''}`}>
+                      <tr key={t.id} className={`border-b border-gray-100 ${/^1453\s*İstanbul/i.test(t.takim) ? 'bg-[#1A4D2E]/5 font-semibold' : ''}`}>
                         <td className="px-4 py-2.5 text-gray-400">{idx + 1}</td>
                         <td className="px-4 py-2.5 text-gray-900">{t.takim}</td>
                         <td className="px-2 py-2.5 text-center text-gray-500">{t.o}</td>
