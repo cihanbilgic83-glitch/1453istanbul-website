@@ -1,169 +1,124 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { SiteAyarlari } from '@/lib/data';
+import Etiket from '@/components/ui/Etiket';
 
-export default function IletisimClient({ ayarlar }: { ayarlar: SiteAyarlari }) {
-  const [form, setForm] = useState({ ad: '', email: '', telefon: '', konu: '', mesaj: '' });
-  const [durum, setDurum] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+const KONULAR = ['Genel Bilgi', 'Üyelik', 'Altyapı', 'Sponsorluk', 'Transfer', 'Basın', 'Diğer'];
+const BOS_FORM = { ad: '', email: '', telefon: '', konu: '', mesaj: '', web_adresi: '' };
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+const alanSinifi = 'w-full border border-cizgi bg-fildisi px-4 py-3 text-[15px] text-murekkep placeholder-[#8E988D] focus:border-zumrut';
+
+export default function IletisimClient({ ayarlar, baslangicKonusu }: { ayarlar: SiteAyarlari; baslangicKonusu?: string }) {
+  const [form, setForm] = useState({ ...BOS_FORM, konu: KONULAR.includes(baslangicKonusu ?? '') ? baslangicKonusu! : '' });
+  const [onay, setOnay] = useState(false);
+  const [durum, setDurum] = useState<'bos' | 'gonderiliyor' | 'tamam' | 'hata'>('bos');
+
+  const yaz = (alan: keyof typeof BOS_FORM, deger: string) => setForm((f) => ({ ...f, [alan]: deger }));
 
   const gonder = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDurum('loading');
+    setDurum('gonderiliyor');
     try {
-      const res = await fetch('/api/mesajlar', {
+      const cevap = await fetch('/api/mesajlar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      if (res.ok) {
-        setDurum('success');
-        setForm({ ad: '', email: '', telefon: '', konu: '', mesaj: '' });
-      } else {
-        setDurum('error');
-      }
+      if (!cevap.ok) throw new Error();
+      setDurum('tamam');
+      setForm(BOS_FORM);
+      setOnay(false);
     } catch {
-      setDurum('error');
+      setDurum('hata');
     }
   };
 
   const { iletisim, calisma_saatleri } = ayarlar;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* İletişim Bilgileri */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">İletişim Bilgileri</h2>
-
-          {iletisim.adres && (
-            <div className="bg-white rounded-xl p-5 card-shadow border border-gray-100 flex items-center gap-4">
-              <div className="w-10 h-10 bg-[#1A4D2E]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-[#1A4D2E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 font-medium">Adres</div>
-                <div className="text-gray-800 font-semibold text-sm">{iletisim.adres}</div>
-              </div>
-            </div>
-          )}
-
-          {iletisim.email && (
-            <div className="bg-white rounded-xl p-5 card-shadow border border-gray-100 flex items-center gap-4">
-              <div className="w-10 h-10 bg-[#1A4D2E]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-[#1A4D2E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 font-medium">E-posta</div>
-                <div className="text-gray-800 font-semibold text-sm">{iletisim.email}</div>
-              </div>
-            </div>
-          )}
-
-          {iletisim.telefon && (
-            <div className="bg-white rounded-xl p-5 card-shadow border border-gray-100 flex items-center gap-4">
-              <div className="w-10 h-10 bg-[#1A4D2E]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-[#1A4D2E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 font-medium">Telefon</div>
-                <div className="text-gray-800 font-semibold text-sm">{iletisim.telefon}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Çalışma Saatleri */}
-          {calisma_saatleri.length > 0 && (
-            <div className="bg-[#1A4D2E] rounded-xl p-5 text-white">
-              <h3 className="font-bold mb-3 text-sm">Çalışma Saatleri</h3>
-              {calisma_saatleri.map((s) => (
-                <div key={s.gun} className="flex justify-between text-sm py-1.5 border-b border-white/10 last:border-0">
-                  <span className="text-green-200">{s.gun}</span>
-                  <span className={s.saat === 'Kapalı' ? 'text-red-300' : 'text-white font-medium'}>{s.saat}</span>
-                </div>
-              ))}
-            </div>
+    <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12 md:py-16 grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <aside className="lg:col-span-4 space-y-8">
+        <div>
+          <Etiket>İletişim bilgileri</Etiket>
+          <dl className="mt-5 space-y-5 text-[15px]">
+            {iletisim.adres && (<div><dt className="text-xs tracking-[0.16em] text-kursun font-semibold uppercase">Adres</dt><dd className="mt-1 text-murekkep">{iletisim.adres}</dd></div>)}
+            {iletisim.telefon && (<div><dt className="text-xs tracking-[0.16em] text-kursun font-semibold uppercase">Telefon</dt><dd className="mt-1"><a href={`tel:${iletisim.telefon.replace(/\s/g, '')}`} className="text-zumrut font-semibold hover:text-al">{iletisim.telefon}</a></dd></div>)}
+            {iletisim.email && (<div><dt className="text-xs tracking-[0.16em] text-kursun font-semibold uppercase">E-posta</dt><dd className="mt-1"><a href={`mailto:${iletisim.email}`} className="text-zumrut font-semibold hover:text-al break-all">{iletisim.email}</a></dd></div>)}
+          </dl>
+          {iletisim.harita_link && (
+            <a href={iletisim.harita_link} target="_blank" rel="noopener noreferrer" className="inline-block mt-6 text-sm font-semibold text-zumrut border-b border-zumrut pb-0.5 hover:text-al hover:border-al">Haritada aç</a>
           )}
         </div>
 
-        {/* İletişim Formu */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl card-shadow border border-gray-100 p-6 md:p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Mesaj Gönderin</h2>
+        {calisma_saatleri.length > 0 && (
+          <div className="bg-gece text-krem p-6">
+            <div className="text-[11px] tracking-[0.24em] text-mat font-semibold">ÇALIŞMA SAATLERİ</div>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {calisma_saatleri.map((s) => (
+                <li key={s.gun} className="flex justify-between gap-4 border-b border-krem/10 pb-2.5 last:border-0 last:pb-0">
+                  <span>{s.gun}</span><span className="text-white font-semibold rakam">{s.saat}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </aside>
 
-            {durum === 'success' ? (
-              <div className="text-center py-10">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-xl font-bold text-gray-900 mb-2">Mesajınız İletildi!</p>
-                <p className="text-gray-500 text-sm">En kısa sürede size geri döneceğiz.</p>
-                <button onClick={() => setDurum('idle')}
-                  className="mt-6 bg-[#1A4D2E] hover:bg-[#163d24] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
-                  Yeni Mesaj
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={gonder} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Ad Soyad *</label>
-                    <input required value={form.ad} onChange={e => set('ad', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-[#f8f9fa]"
-                      placeholder="Adınız Soyadınız" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">E-posta *</label>
-                    <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-[#f8f9fa]"
-                      placeholder="ornek@email.com" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Telefon</label>
-                    <input value={form.telefon} onChange={e => set('telefon', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-[#f8f9fa]"
-                      placeholder="+90 5XX XXX XX XX" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Konu *</label>
-                    <select required value={form.konu} onChange={e => set('konu', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-[#f8f9fa]">
-                      <option value="">Konu seçin</option>
-                      {['Genel Bilgi', 'Sponsorluk', 'Transfer', 'Altyapı', 'Basın', 'Diğer'].map(k => (
-                        <option key={k}>{k}</option>
-                      ))}
-                    </select>
-                  </div>
+      <div className="lg:col-span-8">
+        <div className="bg-white border border-cizgi border-t-[3px] border-t-mat p-6 md:p-10">
+          <h2 className="font-baslik font-bold uppercase text-zumrut text-3xl md:text-4xl leading-none">Bize yazın</h2>
+          <p className="mt-2 text-sm text-kursun">Altyapı seçmeleri, üyelik, sponsorluk ve tüm sorularınız için.</p>
+
+          {durum === 'tamam' ? (
+            <div role="status" className="mt-8 py-10 text-center">
+              <p className="font-zarif italic text-3xl text-zumrut">Mesajınız bize ulaştı.</p>
+              <p className="mt-2 text-sm text-kursun">En kısa sürede size dönüş yapacağız.</p>
+              <button type="button" onClick={() => setDurum('bos')} className="mt-6 bg-zumrut text-white px-6 py-3 font-semibold hover:bg-gece">Yeni mesaj</button>
+            </div>
+          ) : (
+            <form onSubmit={gonder} className="mt-8 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="ad" className="block text-xs font-semibold text-kursun mb-1.5">Ad soyad *</label>
+                  <input id="ad" required maxLength={100} autoComplete="name" value={form.ad} onChange={(e) => yaz('ad', e.target.value)} className={alanSinifi} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Mesajınız *</label>
-                  <textarea required rows={5} value={form.mesaj} onChange={e => set('mesaj', e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-[#f8f9fa] resize-none"
-                    placeholder="Mesajınızı buraya yazın..." />
+                  <label htmlFor="email" className="block text-xs font-semibold text-kursun mb-1.5">E-posta *</label>
+                  <input id="email" required type="email" maxLength={150} autoComplete="email" value={form.email} onChange={(e) => yaz('email', e.target.value)} className={alanSinifi} />
                 </div>
-                {durum === 'error' && (
-                  <p className="text-red-500 text-sm">Bir hata oluştu. Lütfen tekrar deneyin.</p>
-                )}
-                <button type="submit" disabled={durum === 'loading'}
-                  className="w-full bg-[#C0392B] hover:bg-[#96281B] text-white py-3 rounded-xl font-semibold transition-colors disabled:opacity-60">
-                  {durum === 'loading' ? 'Gönderiliyor...' : 'Mesaj Gönder'}
-                </button>
-              </form>
-            )}
-          </div>
+                <div>
+                  <label htmlFor="telefon" className="block text-xs font-semibold text-kursun mb-1.5">Telefon</label>
+                  <input id="telefon" type="tel" maxLength={30} autoComplete="tel" value={form.telefon} onChange={(e) => yaz('telefon', e.target.value)} className={alanSinifi} placeholder="05XX XXX XX XX" />
+                </div>
+                <div>
+                  <label htmlFor="konu" className="block text-xs font-semibold text-kursun mb-1.5">Konu *</label>
+                  <select id="konu" required value={form.konu} onChange={(e) => yaz('konu', e.target.value)} className={alanSinifi}>
+                    <option value="">Konu seçin</option>
+                    {KONULAR.map((k) => <option key={k}>{k}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="mesaj" className="block text-xs font-semibold text-kursun mb-1.5">Mesajınız *</label>
+                <textarea id="mesaj" required rows={6} maxLength={3000} value={form.mesaj} onChange={(e) => yaz('mesaj', e.target.value)} className={`${alanSinifi} resize-y`} />
+              </div>
+              {/* Botlar için görünmez tuzak alan; insanlar doldurmaz */}
+              <div aria-hidden="true" className="absolute -left-[9999px] w-px h-px overflow-hidden">
+                <label htmlFor="web_adresi">Web adresi</label>
+                <input id="web_adresi" tabIndex={-1} autoComplete="off" value={form.web_adresi} onChange={(e) => yaz('web_adresi', e.target.value)} />
+              </div>
+              <label className="flex items-start gap-3 text-sm text-[#3A423E]">
+                <input type="checkbox" required checked={onay} onChange={(e) => setOnay(e.target.checked)} className="mt-1 w-4 h-4 accent-[#0E3B24]" />
+                <span><Link href="/kvkk" target="_blank" className="text-zumrut font-semibold underline">KVKK Aydınlatma Metni</Link>&apos;ni okudum; kişisel verilerimin bu mesajı yanıtlamak amacıyla işlenmesini kabul ediyorum. *</span>
+              </label>
+              {durum === 'hata' && <p role="alert" className="text-al text-sm">Mesaj gönderilemedi. Lütfen tekrar deneyin ya da bizi telefonla arayın.</p>}
+              <button type="submit" disabled={durum === 'gonderiliyor'} className="w-full sm:w-auto bg-al hover:bg-al-koyu text-white px-10 py-4 font-semibold transition-colors disabled:opacity-60">
+                {durum === 'gonderiliyor' ? 'Gönderiliyor...' : 'Mesajı gönder'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,13 @@
 import type { Metadata } from 'next';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
+import '@fontsource/barlow-condensed/800.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/cormorant-garamond/600-italic.css';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -31,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      <body className="bg-[#f8f9fa] text-gray-900 min-h-screen flex flex-col">
+      <body className="bg-fildisi text-murekkep min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1">{children}</main>
         <ConditionalFooter><Footer /></ConditionalFooter>

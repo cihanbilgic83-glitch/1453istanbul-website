@@ -5,6 +5,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getHaberler, haberiBul } from '@/lib/data';
 import HaberKapak from '@/components/haber/HaberKapak';
 import { gorselAdresi, optimizeEdilemez } from '@/lib/gorsel';
+import PaylasButonlari from '@/components/haber/PaylasButonlari';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,67 +47,76 @@ export default async function HaberDetayPage({ params }: Props) {
   const diger = haberler.filter((h) => h.slug !== slug).slice(0, 3);
   const formatDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
+  const siteAdresi = process.env.NEXT_PUBLIC_SITE_URL || 'https://1453istanbul.com.tr';
+  const tamAdres = `${siteAdresi}/haberler/${haber.slug}`;
+  const paragraflar = haber.icerik.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const okumaSuresi = Math.max(1, Math.round(haber.icerik.split(/\s+/).length / 200));
+
   return (
-    <div className="pt-20 bg-[#f8f9fa] min-h-screen">
-      {/* Banner */}
-      <div className="bg-[#1A4D2E] py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <Link href="/haberler" className="inline-flex items-center gap-1 text-green-200 hover:text-white text-sm mb-4 transition-colors">
-            ← Haberlere Dön
-          </Link>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-[#C0392B] text-white text-xs px-2.5 py-1 rounded-full font-semibold">{haber.kategori}</span>
-            <span className="text-green-200 text-xs">{formatDate(haber.tarih)}</span>
+    <article className="bg-fildisi">
+      <div className="h-[88px] bg-gece" />
+
+      <header className="max-w-4xl mx-auto px-5 sm:px-8 pt-10 md:pt-14 text-center">
+        <nav aria-label="Konum" className="text-[13px] text-kursun">
+          <Link href="/haberler" className="hover:text-zumrut">Haberler</Link>
+          <span className="mx-2">/</span>
+          <span>{haber.kategori}</span>
+        </nav>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <span aria-hidden="true" className="h-px w-10 bg-al" />
+          <span className="text-xs tracking-[0.28em] text-al font-semibold uppercase">{haber.kategori} · {formatDate(haber.tarih)}</span>
+          <span aria-hidden="true" className="h-px w-10 bg-al" />
+        </div>
+        <h1 className="mt-5 font-baslik font-extrabold uppercase text-zumrut text-[44px] sm:text-6xl md:text-[80px] leading-[0.95]">{haber.baslik}</h1>
+        {haber.ozet && <p className="mt-5 mx-auto max-w-3xl font-zarif italic text-[23px] md:text-[30px] leading-snug text-[#3A423E]">{haber.ozet}</p>}
+        <div className="mt-7 flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-kursun">
+          <span>{haber.yazar || '1453 İstanbul AS Basın'} <span aria-hidden="true" className="inline-block w-1 h-1 rounded-full bg-mat align-middle mx-2" /> {okumaSuresi} dk okuma</span>
+          <div className="hidden md:block"><PaylasButonlari adres={tamAdres} baslik={haber.baslik} /></div>
+        </div>
+      </header>
+
+      {haber.gorsel && (
+        <figure className="max-w-6xl mx-auto mt-10 md:mt-12 md:px-8">
+          <div className="relative aspect-[16/9] bg-gece">
+            <Image src={gorselAdresi(haber.gorsel)} alt={haber.baslik} fill className="object-cover" sizes="(max-width: 1200px) 100vw, 1200px" priority unoptimized={optimizeEdilemez(haber.gorsel)} />
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">{haber.baslik}</h1>
-          {haber.yazar && <p className="text-green-200 text-sm mt-2">Yazar: {haber.yazar}</p>}
+          <figcaption className="px-5 md:px-0 mt-3 text-[13px] text-kursun">Fotoğraf: 1453 İstanbul AS</figcaption>
+        </figure>
+      )}
+
+      <div className="max-w-[680px] mx-auto px-5 sm:px-0 mt-10 md:mt-14 text-[17px] md:text-[19px] leading-[1.75] text-[#2A302D]">
+        {paragraflar.map((paragraf, i) => (
+          <p key={i} className={i === 0 ? 'first-letter:float-left first-letter:font-zarif first-letter:italic first-letter:font-semibold first-letter:text-[72px] md:first-letter:text-[88px] first-letter:leading-[0.8] first-letter:text-zumrut first-letter:pr-3 first-letter:pt-2' : 'mt-6'}>
+            {paragraf}
+          </p>
+        ))}
+        <div className="mt-12 pt-6 border-t border-cizgi md:hidden">
+          <div className="text-[11px] tracking-[0.24em] text-kursun font-semibold mb-3">PAYLAŞ</div>
+          <PaylasButonlari adres={tamAdres} baslik={haber.baslik} buyuk />
         </div>
       </div>
-      <div className="h-1 bg-[#C0392B]" />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        {haber.gorsel && (
-          <div className="relative aspect-video rounded-xl overflow-hidden card-shadow mb-8">
-            <Image src={gorselAdresi(haber.gorsel)} alt={haber.baslik} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" priority unoptimized={optimizeEdilemez(haber.gorsel)} />
+      {diger.length > 0 && (
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 pt-20 pb-20">
+          <div className="flex items-center gap-3">
+            <span aria-hidden="true" className="h-px w-10 bg-al" />
+            <h2 className="text-xs tracking-[0.28em] text-al font-semibold">DİĞER HABERLER</h2>
           </div>
-        )}
-
-        <div className="bg-white rounded-xl card-shadow border border-gray-100 p-6 md:p-8 mb-10">
-          {haber.ozet && (
-            <p className="text-gray-600 text-base leading-relaxed italic mb-6 pb-6 border-b border-gray-100">
-              {haber.ozet}
-            </p>
-          )}
-          <div className="prose prose-gray max-w-none">
-            {haber.icerik.split('\n\n').map((paragraf: string, i: number) => (
-              <p key={i} className="text-gray-700 leading-relaxed mb-4">{paragraf}</p>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {diger.map((h) => (
+              <Link key={h.id} href={`/haberler/${h.slug}`} className="group flex gap-4 py-4 md:py-0 border-t md:border-t-0 border-cizgi">
+                <div className="relative w-28 h-20 md:w-36 md:h-24 shrink-0 overflow-hidden bg-gece">
+                  <HaberKapak gorsel={h.gorsel} baslik={h.baslik} sizes="150px" />
+                </div>
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <span className="text-[11px] tracking-[0.2em] text-al font-semibold uppercase">{h.kategori}</span>
+                  <span className="font-baslik font-bold text-zumrut text-xl leading-tight line-clamp-3 group-hover:text-al transition-colors">{h.baslik}</span>
+                </div>
+              </Link>
             ))}
           </div>
-        </div>
-
-        {diger.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-5">
-              Diğer <span className="text-[#C0392B]">Haberler</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {diger.map((h) => (
-                <Link key={h.id} href={`/haberler/${h.slug}`}
-                  className="group bg-white rounded-xl overflow-hidden card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 transition-all duration-200 hover:-translate-y-0.5">
-                  <div className="relative h-36 overflow-hidden">
-                    <HaberKapak gorsel={h.gorsel} baslik={h.baslik} className="group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 640px) 100vw, 280px" />
-                  </div>
-                  <div className="p-3">
-                    <p className="font-semibold text-gray-800 group-hover:text-[#1A4D2E] text-sm line-clamp-2 transition-colors">{h.baslik}</p>
-                    <p className="text-xs text-gray-400 mt-1">{formatDate(h.tarih)}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+        </section>
+      )}
+    </article>
   );
 }

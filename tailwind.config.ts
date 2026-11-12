@@ -9,6 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Fetih 1453 kimliği
+        zumrut: "#0E3B24",
+        gece: "#0A2416",
+        al: { DEFAULT: "#B3261E", koyu: "#8E1D17" },
+        mat: "#C9A227",
+        fildisi: "#F6F3EA",
+        krem: "#E9E2CC",
+        cizgi: "#DDD5BF",
+        murekkep: "#14181B",
+        kursun: "#5B6460",
         kirmizi: {
           DEFAULT: "#C0392B",
           dark: "#96281B",
@@ -26,7 +36,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        baslik: ["'Barlow Condensed'", "Inter", "sans-serif"],
+        zarif: ["'Cormorant Garamond'", "Georgia", "serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",

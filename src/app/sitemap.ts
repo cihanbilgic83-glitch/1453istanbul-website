@@ -6,7 +6,7 @@ const SITE_ADRESI = process.env.NEXT_PUBLIC_SITE_URL || 'https://1453istanbul.co
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const sabitSayfalar = ['', '/kulup', '/fikstur', '/haberler', '/galeri', '/iletisim'].map((yol) => ({
+  const sabitSayfalar = ['', '/kulup', '/fikstur', '/haberler', '/galeri', '/iletisim', '/kvkk'].map((yol) => ({
     url: `${SITE_ADRESI}${yol}`,
     changeFrequency: 'weekly' as const,
     priority: yol === '' ? 1 : 0.7,

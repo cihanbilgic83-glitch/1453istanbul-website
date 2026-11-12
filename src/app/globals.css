@@ -20,10 +20,25 @@ html {
 }
 
 body {
-  background-color: #f8f9fa;
-  color: #1a1a1a;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #F6F3EA;
+  color: #14181B;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fetih 1453: tabular rakamlar (skor, puan tabloları) */
+.rakam { font-variant-numeric: tabular-nums; }
+
+/* Tezhip esinli ince çift altın çizgi */
+.tezhip {
+  height: 7px;
+  border-top: 1px solid #C9A227;
+  border-bottom: 1px solid #C9A227;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 /* Custom scrollbar */
@@ -36,12 +51,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1A4D2E;
+  background: #0E3B24;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #C0392B;
+  background: #C9A227;
 }
 
 /* Card shadow */

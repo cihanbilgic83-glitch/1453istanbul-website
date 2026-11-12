@@ -13,8 +13,8 @@ type Props = {
 export default function HaberKapak({ gorsel, baslik, sizes, className = '', oncelikli = false }: Props) {
   if (!gorsel) {
     return (
-      <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1A4D2E] to-[#0F2D1A] ${className}`}>
-        <div className="relative w-20 h-20 opacity-90">
+      <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zumrut to-gece ${className}`}>
+        <div className="relative w-[28%] max-w-[88px] aspect-square opacity-90">
           <Image src="/logo.png" alt="" fill className="object-contain drop-shadow-lg" sizes="80px" />
         </div>
       </div>
