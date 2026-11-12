@@ -24,6 +24,26 @@ const A_TAKIM_LIGI = { yol: '2-amator-lig', no: '3' };
 
 const bekle = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** "fetch failed" yerine asıl nedeni (bağlantı kesilmesi, zaman aşımı, sertifika...) okunur hâle getirir. */
+function baglantiHatasi(hata: unknown, adres: string): Error {
+  const e = hata as { message?: string; name?: string; cause?: { code?: string; message?: string; cause?: { code?: string } } };
+  const kod = e?.cause?.code || e?.cause?.cause?.code || e?.name || '';
+  const ayrinti = e?.cause?.message || e?.message || String(hata);
+  const aciklama: Record<string, string> = {
+    ECONNRESET: 'TFF sunucusu bağlantıyı kesti (sunucumuz engelleniyor olabilir)',
+    ECONNREFUSED: 'TFF sunucusu bağlantıyı reddetti',
+    ETIMEDOUT: 'TFF sunucusu yanıt vermedi (zaman aşımı)',
+    UND_ERR_CONNECT_TIMEOUT: 'TFF sunucusuna bağlanılamadı (zaman aşımı)',
+    UND_ERR_SOCKET: 'TFF sunucusu bağlantıyı kapattı',
+    TimeoutError: 'TFF sayfası 20 saniyede yanıt vermedi',
+    ENOTFOUND: 'TFF alan adı çözülemedi',
+    UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'TFF sitesinin güvenlik sertifikası zinciri eksik',
+    UNABLE_TO_GET_ISSUER_CERT_LOCALLY: 'TFF sitesinin güvenlik sertifikası zinciri eksik',
+    CERT_HAS_EXPIRED: 'TFF sitesinin güvenlik sertifikasının süresi dolmuş',
+  };
+  return new Error(`${aciklama[kod] ?? 'TFF sayfasına ulaşılamadı'} [${kod || 'bilinmiyor'}: ${ayrinti}] (${adres})`);
+}
+
 async function sayfaGetir(yol: string): Promise<CheerioAPI> {
   const adres = yol.startsWith('http') ? yol : TFF_KOK + yol;
   const yanit = await fetch(adres, {
@@ -35,7 +55,7 @@ async function sayfaGetir(yol: string): Promise<CheerioAPI> {
     },
     cache: 'no-store',
     signal: AbortSignal.timeout(20000),
-  });
+  }).catch((hata) => { throw baglantiHatasi(hata, adres); });
   if (!yanit.ok) throw new Error(`TFF sayfası açılamadı (${yanit.status}): ${yol}`);
   const html = await yanit.text();
   await bekle(BEKLEME_MS);
