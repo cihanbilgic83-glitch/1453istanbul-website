@@ -2,6 +2,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getMaclar, getHaberler, getPuanTablosu, getSiteAyarlari, getSponsorlar } from '@/lib/data';
 import type { Mac, Haber, PuanTablosu } from '@/lib/types';
+import HaberKapak from '@/components/haber/HaberKapak';
+import { bizimTakimMi } from '@/lib/takim';
+import { bugununTarihi } from '@/lib/tarih';
+import { gecerliWebAdresi } from '@/lib/link';
+import { optimizeEdilemez } from '@/lib/gorsel';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +16,7 @@ function formatDate(dateStr: string) {
 }
 
 function MacKarti({ mac }: { mac: Mac }) {
-  const bizimTakim = '1453 İstanbul AS';
-  const biz = mac.ev_sahibi === bizimTakim ? 'ev' : 'dep';
+  const biz = bizimTakimMi(mac.ev_sahibi) ? 'ev' : 'dep';
 
   return (
     <div className="bg-white rounded-xl p-5 card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 transition-all duration-300">
@@ -62,18 +66,18 @@ export default async function HomePage() {
     .filter((m: Mac) => m.durum === 'tamamlandi')
     .sort((a: Mac, b: Mac) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime())[0];
 
-  const gelecekMac = maclar
-    .filter((m: Mac) => m.durum === 'gelecek')
-    .sort((a: Mac, b: Mac) => new Date(a.tarih).getTime() - new Date(b.tarih).getTime())[0];
+  // Tarihi geçmiş ama skoru girilmemiş maçlar "yaklaşan" sayılmaz.
+  const bugun = bugununTarihi();
+  const ileridekiMaclar = maclar
+    .filter((m: Mac) => m.durum === 'gelecek' && m.tarih >= bugun)
+    .sort((a: Mac, b: Mac) => a.tarih.localeCompare(b.tarih) || a.saat.localeCompare(b.saat));
+  const gelecekMac = ileridekiMaclar[0];
 
-  const bizimSira = puanAll.findIndex((t: PuanTablosu) => t.takim === '1453 İstanbul AS') + 1;
-  const bizimPuan = puanAll.find((t: PuanTablosu) => t.takim === '1453 İstanbul AS');
+  const bizimSira = puanAll.findIndex((t: PuanTablosu) => bizimTakimMi(t.takim)) + 1;
+  const bizimPuan = puanAll.find((t: PuanTablosu) => bizimTakimMi(t.takim));
 
   // Yaklaşan 3 maç
-  const yaklasanMaclar = maclar
-    .filter((m: Mac) => m.durum === 'gelecek')
-    .sort((a: Mac, b: Mac) => new Date(a.tarih).getTime() - new Date(b.tarih).getTime())
-    .slice(0, 3);
+  const yaklasanMaclar = ileridekiMaclar.slice(0, 3);
 
   return (
     <div>
@@ -168,13 +172,13 @@ export default async function HomePage() {
                     {formatDate(mac.tarih)} · {mac.saat}
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className={`flex-1 text-right text-sm font-bold ${mac.ev_sahibi === '1453 İstanbul AS' ? 'text-[#D4AF37]' : 'text-white'}`}>
+                    <span className={`flex-1 text-right text-sm font-bold ${bizimTakimMi(mac.ev_sahibi) ? 'text-[#D4AF37]' : 'text-white'}`}>
                       {mac.ev_sahibi}
                     </span>
                     <span className={`text-xs px-2 py-1 rounded font-bold ${mac.durum === 'tamamlandi' ? 'bg-white text-[#1A4D2E]' : 'bg-[#C0392B] text-white'}`}>
                       {mac.durum === 'tamamlandi' ? `${mac.ev_gol} - ${mac.mis_gol}` : mac.saat}
                     </span>
-                    <span className={`flex-1 text-left text-sm font-bold ${mac.misafir === '1453 İstanbul AS' ? 'text-[#D4AF37]' : 'text-white'}`}>
+                    <span className={`flex-1 text-left text-sm font-bold ${bizimTakimMi(mac.misafir) ? 'text-[#D4AF37]' : 'text-white'}`}>
                       {mac.misafir}
                     </span>
                   </div>
@@ -195,7 +199,7 @@ export default async function HomePage() {
             </h2>
             <div className="mt-2 w-12 h-1 bg-[#1A4D2E] mx-auto rounded" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {sonMac && (
               <div>
                 <div className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
@@ -205,15 +209,20 @@ export default async function HomePage() {
                 <MacKarti mac={sonMac} />
               </div>
             )}
-            {gelecekMac && (
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#C0392B] animate-pulse" />
-                  Gelecek Maç
-                </div>
-                <MacKarti mac={gelecekMac} />
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#C0392B] animate-pulse" />
+                Gelecek Maç
               </div>
-            )}
+              {gelecekMac ? (
+                <MacKarti mac={gelecekMac} />
+              ) : (
+                <div className="bg-[#f8f9fa] rounded-xl p-5 border border-dashed border-gray-200 text-center h-[calc(100%-2rem)] flex flex-col items-center justify-center">
+                  <div className="font-bold text-gray-700 text-sm">Fikstür yakında</div>
+                  <div className="text-xs text-gray-400 mt-1">{ayarlar.hero.sezon || 'Yeni sezon'} maç programı açıklandığında burada yer alacak.</div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="text-center mt-8">
             <Link href="/fikstur"
@@ -246,9 +255,9 @@ export default async function HomePage() {
               <Link key={haber.id} href={`/haberler/${haber.slug}`}
                 className="group bg-white rounded-xl overflow-hidden card-shadow hover:shadow-lg border border-gray-100 hover:border-[#1A4D2E]/30 transition-all duration-300 hover:-translate-y-1">
                 <div className="relative h-48 overflow-hidden">
-                  <Image src={haber.gorsel} alt={haber.baslik} fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                  <HaberKapak gorsel={haber.gorsel} baslik={haber.baslik}
+                    className="group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, 33vw" />
                   <div className="absolute top-3 left-3">
                     <span className="bg-[#C0392B] text-white text-xs px-2 py-1 rounded-md font-medium">
                       {haber.kategori}
@@ -300,7 +309,7 @@ export default async function HomePage() {
                   {puanTablosu.map((takim: PuanTablosu, idx: number) => (
                     <tr key={takim.id}
                       className={`border-b border-gray-100 table-row-hover ${
-                        takim.takim === '1453 İstanbul AS'
+                        bizimTakimMi(takim.takim)
                           ? 'bg-[#1A4D2E]/8 border-l-4 border-l-[#1A4D2E] font-semibold'
                           : ''
                       }`}>
@@ -328,20 +337,24 @@ export default async function HomePage() {
               Sponsorlarımız
             </p>
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-              {sponsorlar.map((s) => (
-                <a key={s.id} href={s.web || '#'} target="_blank" rel="noopener noreferrer"
-                  className="hover:opacity-80 transition-opacity">
-                  {s.logo ? (
-                    <div className="relative h-12 w-32">
-                      <Image src={s.logo} alt={s.isim} fill className="object-contain" sizes="128px" unoptimized />
-                    </div>
-                  ) : (
-                    <div className="text-gray-400 font-bold text-lg tracking-wider hover:text-gray-600 transition-colors">
-                      {s.isim}
-                    </div>
-                  )}
-                </a>
-              ))}
+              {sponsorlar.map((s) => {
+                const icerik = s.logo ? (
+                  <div className="relative h-12 w-32">
+                    <Image src={s.logo} alt={s.isim} fill className="object-contain" sizes="128px" unoptimized={optimizeEdilemez(s.logo)} />
+                  </div>
+                ) : (
+                  <div className="text-gray-400 font-bold text-lg tracking-wider">{s.isim}</div>
+                );
+                const web = gecerliWebAdresi(s.web);
+                return web ? (
+                  <a key={s.id} href={web} target="_blank" rel="noopener noreferrer"
+                    className="hover:opacity-80 transition-opacity" aria-label={s.isim}>
+                    {icerik}
+                  </a>
+                ) : (
+                  <div key={s.id}>{icerik}</div>
+                );
+              })}
             </div>
           </div>
         </section>

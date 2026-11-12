@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getHaberler } from '@/lib/data';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { getHaberler, haberiBul } from '@/lib/data';
+import HaberKapak from '@/components/haber/HaberKapak';
+import { gorselAdresi, optimizeEdilemez } from '@/lib/gorsel';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,17 +12,36 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const haberler = await getHaberler();
-  const haber = haberler.find((h) => h.slug === slug);
-  if (!haber) return { title: 'Haber Bulunamadı' };
-  return { title: haber.baslik, description: haber.ozet };
+  const sonuc = await haberiBul(slug);
+  if (!sonuc) return { title: 'Haber Bulunamadı', robots: { index: false } };
+  const { haber } = sonuc;
+  const aciklama = haber.ozet || haber.icerik.slice(0, 160);
+  const adres = `/haberler/${haber.slug}`;
+  const gorseller = haber.gorsel ? [{ url: gorselAdresi(haber.gorsel, 1200), alt: haber.baslik }] : undefined;
+  return {
+    title: haber.baslik,
+    description: aciklama,
+    alternates: { canonical: adres },
+    openGraph: {
+      type: 'article',
+      title: haber.baslik,
+      description: aciklama,
+      url: adres,
+      publishedTime: haber.tarih,
+      images: gorseller,
+    },
+    twitter: { card: haber.gorsel ? 'summary_large_image' : 'summary', title: haber.baslik, description: aciklama, images: gorseller?.map((g) => g.url) },
+  };
 }
 
 export default async function HaberDetayPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: parametre } = await params;
+  const sonuc = await haberiBul(parametre);
+  if (!sonuc) notFound();
+  const { haber, yonlendir } = sonuc;
+  if (yonlendir) permanentRedirect(`/haberler/${haber.slug}`);
+  const slug = haber.slug;
   const haberler = await getHaberler();
-  const haber = haberler.find((h) => h.slug === slug);
-  if (!haber) notFound();
 
   const diger = haberler.filter((h) => h.slug !== slug).slice(0, 3);
   const formatDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -46,14 +67,16 @@ export default async function HaberDetayPage({ params }: Props) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
         {haber.gorsel && (
           <div className="relative aspect-video rounded-xl overflow-hidden card-shadow mb-8">
-            <Image src={haber.gorsel} alt={haber.baslik} fill className="object-cover" unoptimized />
+            <Image src={gorselAdresi(haber.gorsel)} alt={haber.baslik} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" priority unoptimized={optimizeEdilemez(haber.gorsel)} />
           </div>
         )}
 
         <div className="bg-white rounded-xl card-shadow border border-gray-100 p-6 md:p-8 mb-10">
-          <p className="text-gray-600 text-base leading-relaxed italic mb-6 pb-6 border-b border-gray-100">
-            {haber.ozet}
-          </p>
+          {haber.ozet && (
+            <p className="text-gray-600 text-base leading-relaxed italic mb-6 pb-6 border-b border-gray-100">
+              {haber.ozet}
+            </p>
+          )}
           <div className="prose prose-gray max-w-none">
             {haber.icerik.split('\n\n').map((paragraf: string, i: number) => (
               <p key={i} className="text-gray-700 leading-relaxed mb-4">{paragraf}</p>
@@ -71,8 +94,8 @@ export default async function HaberDetayPage({ params }: Props) {
                 <Link key={h.id} href={`/haberler/${h.slug}`}
                   className="group bg-white rounded-xl overflow-hidden card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 transition-all duration-200 hover:-translate-y-0.5">
                   <div className="relative h-36 overflow-hidden">
-                    <Image src={h.gorsel} alt={h.baslik} fill className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="200px" unoptimized />
+                    <HaberKapak gorsel={h.gorsel} baslik={h.baslik} className="group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 640px) 100vw, 280px" />
                   </div>
                   <div className="p-3">
                     <p className="font-semibold text-gray-800 group-hover:text-[#1A4D2E] text-sm line-clamp-2 transition-colors">{h.baslik}</p>

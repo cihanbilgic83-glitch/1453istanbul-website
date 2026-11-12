@@ -38,7 +38,7 @@ export default function Navbar() {
       <div className="h-1 bg-[#C0392B]" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-18">
+        <div className="flex items-center justify-between h-[76px]">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-10 h-10 md:w-11 md:h-11 bg-white rounded-full p-1 shadow-md">
@@ -77,7 +77,7 @@ export default function Navbar() {
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 rounded-lg text-green-100 hover:text-white hover:bg-white/15 transition-colors"
-            aria-label="Menü"
+            aria-label="Menü" aria-expanded={isOpen}
           >
             {isOpen ? <X size={22} /> : <Menu size={22} />}
           </button>

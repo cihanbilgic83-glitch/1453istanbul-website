@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import HaberKapak from '@/components/haber/HaberKapak';
 import Link from 'next/link';
 import type { Haber } from '@/lib/types';
 
@@ -49,9 +49,9 @@ export default function HaberlerClient({ haberler }: { haberler: Haber[] }) {
             <Link key={haber.id} href={`/haberler/${haber.slug}`}
               className="group bg-white rounded-xl overflow-hidden card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
               <div className="relative h-52 overflow-hidden">
-                <Image src={haber.gorsel} alt={haber.baslik} fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                <HaberKapak gorsel={haber.gorsel} baslik={haber.baslik}
+                  className="group-hover:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, 33vw" />
                 <div className="absolute top-3 left-3">
                   <span className="bg-[#C0392B] text-white text-xs px-2.5 py-1 rounded-full font-semibold">
                     {haber.kategori}

@@ -2,6 +2,8 @@ import { Redis } from '@upstash/redis';
 import fs from 'fs';
 import path from 'path';
 import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj } from './types';
+import { adresiCoz, slugify } from './slug';
+import { tarihSirala } from './tarih';
 
 // Redis istemcisi
 const redis = new Redis({
@@ -71,12 +73,26 @@ export async function saveMaclar(data: Mac[]): Promise<void> {
 }
 
 // ---- HABERLER ----
+// Haberler her zaman yeniden eskiye, tarihe göre sıralı döner.
 export async function getHaberler(): Promise<Haber[]> {
-  return getList<Haber>('haberler', 'haberler.json');
+  const haberler = await getList<Haber>('haberler', 'haberler.json');
+  return tarihSirala(haberler.filter((h) => h && h.slug && h.baslik));
 }
-export async function getHaberBySlug(slug: string): Promise<Haber | undefined> {
+
+export type HaberArama = { haber: Haber; yonlendir: boolean } | null;
+
+// Adres parametresine göre haberi bulur. Eski (bozuk) adresler için yönlendirme ister.
+export async function haberiBul(parametre: string): Promise<HaberArama> {
+  const slug = adresiCoz(parametre);
   const haberler = await getHaberler();
-  return haberler.find((h) => h.slug === slug);
+  const tam = haberler.find((h) => h.slug === slug);
+  if (tam) return { haber: tam, yonlendir: false };
+  const eski = haberler.find((h) => h.eskiSluglar?.includes(slug));
+  if (eski) return { haber: eski, yonlendir: true };
+  const duzeltilmis = slugify(slug);
+  const benzer = haberler.find((h) => h.slug === duzeltilmis);
+  if (benzer) return { haber: benzer, yonlendir: true };
+  return null;
 }
 export async function saveHaberler(data: Haber[]): Promise<void> {
   await setList('haberler', data);

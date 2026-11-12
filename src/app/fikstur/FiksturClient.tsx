@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import type { Mac, PuanTablosu, MacOlay, MacKart } from '@/lib/types';
-
-const BIZ = '1453 İstanbul AS';
+import { bizimTakimMi } from '@/lib/takim';
+import { bugununTarihi } from '@/lib/tarih';
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -11,10 +11,12 @@ function formatDate(d: string) {
 
 function MacDetay({ mac }: { mac: Mac }) {
   const [acik, setAcik] = useState(false);
-  const evBiz = mac.ev_sahibi === BIZ;
+  const evBiz = bizimTakimMi(mac.ev_sahibi);
+  const depBiz = bizimTakimMi(mac.misafir);
+  const sonucBekleniyor = mac.durum === 'gelecek' && mac.tarih < bugununTarihi();
 
   let sonuc = null;
-  if (mac.durum === 'tamamlandi' && mac.ev_gol !== null && mac.mis_gol !== null) {
+  if (mac.durum === 'tamamlandi' && mac.ev_gol !== null && mac.mis_gol !== null && (evBiz || depBiz)) {
     const bizGol = evBiz ? mac.ev_gol : mac.mis_gol;
     const rakipGol = evBiz ? mac.mis_gol : mac.ev_gol;
     sonuc = bizGol > rakipGol ? 'G' : bizGol === rakipGol ? 'B' : 'M';
@@ -59,7 +61,7 @@ function MacDetay({ mac }: { mac: Mac }) {
               </span>
             )}
           </div>
-          <div className={`flex-1 text-left font-semibold text-sm ${!evBiz ? 'text-[#1A4D2E]' : 'text-gray-700'}`}>
+          <div className={`flex-1 text-left font-semibold text-sm ${depBiz ? 'text-[#1A4D2E]' : 'text-gray-700'}`}>
             {mac.misafir}
           </div>
         </div>
@@ -73,7 +75,8 @@ function MacDetay({ mac }: { mac: Mac }) {
               'bg-red-100 text-red-500'
             }`}>{sonuc}</span>
           )}
-          {mac.durum === 'gelecek' && <span className="bg-blue-50 text-blue-500 text-xs px-2 py-0.5 rounded border border-blue-200">Gelecek</span>}
+          {mac.durum === 'gelecek' && !sonucBekleniyor && <span className="bg-blue-50 text-blue-500 text-xs px-2 py-0.5 rounded border border-blue-200">Gelecek</span>}
+          {sonucBekleniyor && <span className="bg-gray-50 text-gray-500 text-xs px-2 py-0.5 rounded border border-gray-200 whitespace-nowrap">Sonuç bekleniyor</span>}
           {mac.durum === 'ertelendi' && <span className="bg-yellow-50 text-yellow-600 text-xs px-2 py-0.5 rounded border border-yellow-200">Ertelendi</span>}
           {hasDetail && (
             <span className="text-gray-400 text-xs">{acik ? '▲' : '▼'}</span>
@@ -167,10 +170,13 @@ function MacDetay({ mac }: { mac: Mac }) {
   );
 }
 
-export default function FiksturClient({ maclar, puanTablosu }: { maclar: Mac[]; puanTablosu: PuanTablosu[] }) {
-  const sirali = [...maclar].sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime());
-  const gelecek = sirali.filter(m => m.durum === 'gelecek').reverse();
-  const gecmis = sirali.filter(m => m.durum === 'tamamlandi');
+export default function FiksturClient({ maclar, puanTablosu, sezon }: { maclar: Mac[]; puanTablosu: PuanTablosu[]; sezon?: string }) {
+  const bugun = bugununTarihi();
+  const sirali = [...maclar].sort((a, b) => b.tarih.localeCompare(a.tarih) || (b.saat || '').localeCompare(a.saat || ''));
+  const gelecek = sirali.filter(m => m.durum === 'gelecek' && m.tarih >= bugun).reverse();
+  // Tamamlanan maçlar + tarihi geçtiği hâlde skoru girilmemiş maçlar
+  const gecmis = sirali.filter(m => m.durum === 'tamamlandi' || (m.durum === 'gelecek' && m.tarih < bugun));
+  const formuOlanlar = puanTablosu.slice(0, 5).filter(t => (t.form?.length ?? 0) > 0);
 
   return (
     <div className="pt-20 bg-[#f8f9fa] min-h-screen">
@@ -179,7 +185,7 @@ export default function FiksturClient({ maclar, puanTablosu }: { maclar: Mac[]; 
           <h1 className="text-3xl md:text-4xl font-black text-white mb-2">
             Fikstür & <span className="text-[#D4AF37]">Puan Durumu</span>
           </h1>
-          <p className="text-green-200 text-sm">2025 — 2026 Sezonu · Tamamlanan maçlara tıklayarak detayları görüntüleyin</p>
+          <p className="text-green-200 text-sm">{sezon || '2026 - 2027 Sezonu'} · Tamamlanan maçlara tıklayarak detayları görüntüleyin</p>
         </div>
       </div>
       <div className="h-1 bg-[#C0392B]" />
@@ -232,9 +238,9 @@ export default function FiksturClient({ maclar, puanTablosu }: { maclar: Mac[]; 
                 </thead>
                 <tbody>
                   {puanTablosu.map((t, idx) => (
-                    <tr key={t.id} className={`border-b border-gray-100 table-row-hover ${t.takim === BIZ ? 'bg-[#1A4D2E]/8 border-l-2 border-l-[#1A4D2E] font-semibold' : ''}`}>
+                    <tr key={t.id} className={`border-b border-gray-100 table-row-hover ${bizimTakimMi(t.takim) ? 'bg-[#1A4D2E]/8 border-l-2 border-l-[#1A4D2E] font-semibold' : ''}`}>
                       <td className="px-3 py-2.5 text-gray-400">{idx + 1}</td>
-                      <td className="px-2 py-2.5 text-gray-800 truncate max-w-[80px]">{t.takim}</td>
+                      <td className="px-2 py-2.5 text-gray-800 truncate max-w-[110px]" title={t.takim}>{t.takim}</td>
                       <td className="px-2 py-2.5 text-center text-gray-500">{t.o}</td>
                       <td className="px-2 py-2.5 text-center text-green-600 font-medium">{t.g}</td>
                       <td className="px-2 py-2.5 text-center text-gray-500">{t.b}</td>
@@ -247,22 +253,24 @@ export default function FiksturClient({ maclar, puanTablosu }: { maclar: Mac[]; 
               </table>
             </div>
 
-            {/* Form */}
-            <div className="mt-4 bg-white rounded-xl card-shadow border border-gray-100 p-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Son 5 Maç Formu</h3>
-              {puanTablosu.slice(0, 5).map((t) => (
-                <div key={t.id} className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-gray-600 w-24 truncate font-medium">{t.takim.split(' ')[0]}</span>
-                  <div className="flex gap-1">
-                    {t.form.map((f: string, i: number) => (
-                      <span key={i} className={`w-5 h-5 rounded text-xs font-bold flex items-center justify-center ${
-                        f === 'G' ? 'bg-green-100 text-green-600' : f === 'B' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-500'
-                      }`}>{f}</span>
-                    ))}
+            {/* Form: yalnızca form verisi olan takımlar */}
+            {formuOlanlar.length > 0 && (
+              <div className="mt-4 bg-white rounded-xl card-shadow border border-gray-100 p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Son 5 Maç Formu</h3>
+                {formuOlanlar.map((t) => (
+                  <div key={t.id} className="flex items-center gap-2 mb-2">
+                    <span className="text-xs text-gray-600 w-32 truncate font-medium" title={t.takim}>{t.takim}</span>
+                    <div className="flex gap-1">
+                      {t.form.map((f: string, i: number) => (
+                        <span key={i} className={`w-5 h-5 rounded text-xs font-bold flex items-center justify-center ${
+                          f === 'G' ? 'bg-green-100 text-green-600' : f === 'B' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-500'
+                        }`}>{f}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

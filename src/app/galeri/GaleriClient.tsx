@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { optimizeEdilemez } from '@/lib/gorsel';
 import type { GaleriOge } from '@/lib/types';
 
 export default function GaleriClient({ galeri }: { galeri: GaleriOge[] }) {
@@ -46,7 +47,7 @@ export default function GaleriClient({ galeri }: { galeri: GaleriOge[] }) {
               className="group cursor-pointer relative aspect-square rounded-xl overflow-hidden card-shadow border border-gray-100 hover:border-[#1A4D2E]/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
               <Image src={foto.gorsel} alt={foto.baslik} fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 50vw, 25vw" unoptimized />
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" unoptimized={optimizeEdilemez(foto.gorsel)} />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1A4D2E]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white text-xs font-semibold">{foto.baslik}</p>
@@ -74,7 +75,7 @@ export default function GaleriClient({ galeri }: { galeri: GaleriOge[] }) {
               ✕
             </button>
             <div className="relative aspect-video rounded-xl overflow-hidden">
-              <Image src={secili.gorsel} alt={secili.baslik} fill className="object-contain" unoptimized />
+              <Image src={secili.gorsel} alt={secili.baslik} fill className="object-contain" sizes="100vw" unoptimized={optimizeEdilemez(secili.gorsel)} />
             </div>
             <div className="mt-4 text-center">
               <p className="text-white font-semibold">{secili.baslik}</p>

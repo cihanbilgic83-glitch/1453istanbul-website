@@ -4,7 +4,10 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ConditionalFooter from '@/components/layout/ConditionalFooter';
 
+const SITE_ADRESI = process.env.NEXT_PUBLIC_SITE_URL || 'https://1453istanbul.com.tr';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ADRESI),
   title: {
     default: '1453 İstanbul AS Spor Kulübü',
     template: '%s | 1453 İstanbul AS',
@@ -17,6 +20,7 @@ export const metadata: Metadata = {
     description: '1453 İstanbul AS Spor Kulübü resmi web sitesi.',
     type: 'website',
     locale: 'tr_TR',
+    siteName: '1453 İstanbul AS Spor Kulübü',
   },
 };
 

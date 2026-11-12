@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getMaclar, getPuanTablosu } from '@/lib/data';
+import { getMaclar, getPuanTablosu, getSiteAyarlari } from '@/lib/data';
 import FiksturClient from './FiksturClient';
 
 export const metadata: Metadata = {
@@ -10,6 +10,6 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function FiksturPage() {
-  const [maclar, puanTablosu] = await Promise.all([getMaclar(), getPuanTablosu()]);
-  return <FiksturClient maclar={maclar} puanTablosu={puanTablosu} />;
+  const [maclar, puanTablosu, ayarlar] = await Promise.all([getMaclar(), getPuanTablosu(), getSiteAyarlari()]);
+  return <FiksturClient maclar={maclar} puanTablosu={puanTablosu} sezon={ayarlar.hero.sezon} />;
 }

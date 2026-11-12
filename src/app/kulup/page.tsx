@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { optimizeEdilemez } from '@/lib/gorsel';
 import { getSiteAyarlari, getYonetim } from '@/lib/data';
 
 export const metadata: Metadata = {
@@ -99,7 +100,7 @@ export default async function KulupPage() {
             <div className="bg-[#f8f9fa] rounded-2xl p-8 border border-gray-100 flex flex-col md:flex-row gap-8 items-center">
               {ayarlar.baskan_gorsel && (
                 <div className="relative w-28 h-28 rounded-full overflow-hidden flex-shrink-0 card-shadow border-4 border-[#1A4D2E]">
-                  <Image src={ayarlar.baskan_gorsel} alt="Başkan" fill className="object-cover" sizes="112px" unoptimized />
+                  <Image src={ayarlar.baskan_gorsel} alt="Başkan" fill className="object-cover" sizes="112px" unoptimized={optimizeEdilemez(ayarlar.baskan_gorsel)} />
                 </div>
               )}
               <div>
@@ -133,7 +134,7 @@ export default async function KulupPage() {
                 <div key={kisi.id} className="text-center group">
                   <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto mb-3 card-shadow border-4 border-white group-hover:border-[#1A4D2E] transition-colors">
                     {kisi.gorsel ? (
-                      <Image src={kisi.gorsel} alt={kisi.isim} fill className="object-cover" sizes="96px" unoptimized />
+                      <Image src={kisi.gorsel} alt={kisi.isim} fill className="object-cover" sizes="96px" unoptimized={optimizeEdilemez(kisi.gorsel)} />
                     ) : (
                       <div className="w-full h-full bg-[#1A4D2E]/10 flex items-center justify-center">
                         <span className="text-2xl font-bold text-[#1A4D2E]">{kisi.isim.charAt(0)}</span>
