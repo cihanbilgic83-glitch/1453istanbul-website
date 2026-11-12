@@ -7,6 +7,32 @@ import JSZip from 'jszip';
 import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj, MacDegisiklik } from '@/lib/types';
 import type { SiteAyarlari, YonetimUye, Sponsor } from '@/lib/data';
 
+import { slugify } from '@/lib/slug';
+import { gorseliKucult } from '@/lib/gorselKucult';
+
+// ===== SUNUCU İSTEĞİ =====
+// Her kayıtta gerçek sonucu kontrol eder; hata varsa açıklayıcı mesajla fırlatır.
+class IstekHatasi extends Error {}
+
+async function istek<T = unknown>(adres: string, yontem: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', govde?: unknown): Promise<T> {
+  let cevap: Response;
+  try {
+    cevap = await fetch(adres, {
+      method: yontem,
+      headers: govde !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: govde !== undefined ? JSON.stringify(govde) : undefined,
+    });
+  } catch {
+    throw new IstekHatasi('Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.');
+  }
+  const veri = await cevap.json().catch(() => null);
+  if (cevap.status === 401) {
+    throw new IstekHatasi('Oturum süresi doldu. Bu pencereyi kapatmadan yeni sekmede /admin adresinden giriş yapın, sonra tekrar Kaydet\'e basın.');
+  }
+  if (!cevap.ok) throw new IstekHatasi(veri?.error || `İşlem başarısız oldu (hata ${cevap.status}). Tekrar deneyin.`);
+  return veri as T;
+}
+
 type Sekme = 'maclar' | 'haberler' | 'puan' | 'galeri' | 'mesajlar' | 'siteayarlari' | 'yonetim' | 'sponsorlar';
 
 // ===== MODAL =====
@@ -63,12 +89,14 @@ function GorselYukle({ value, onChange, label = 'Görsel' }: { value: string; on
     if (dosya.size > 10 * 1024 * 1024) { setHata('Dosya 10MB\'dan büyük olamaz.'); return; }
     setHata(''); setYukleniyor(true);
     try {
+      const kucuk = await gorseliKucult(dosya);
       const fd = new FormData();
-      fd.append('image', dosya);
+      fd.append('image', kucuk);
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.url) { onChange(data.url); } else { setHata(data.error || 'Yükleme başarısız.'); }
-    } catch { setHata('Bağlantı hatası.'); }
+      const data = await res.json().catch(() => null);
+      if (res.status === 401) { setHata('Oturum süresi doldu. Yeni sekmede tekrar giriş yapıp görseli yeniden seçin.'); return; }
+      if (res.ok && data?.url) { onChange(data.url); } else { setHata(data?.error || `Yükleme başarısız (hata ${res.status}).`); }
+    } catch { setHata('Bağlantı hatası. Tekrar deneyin.'); }
     finally { setYukleniyor(false); e.target.value = ''; }
   };
 
@@ -224,25 +252,44 @@ function MacForm({ mac, onKaydet, onKapat }: { mac?: Mac; onKaydet: (d: Partial<
 }
 
 // ===== HABER FORMU =====
-function HaberForm({ haber, onKaydet, onKapat }: { haber?: Haber; onKaydet: (d: Partial<Haber>) => void; onKapat: () => void }) {
-  const [form, setForm] = useState<Partial<Haber>>(haber || { baslik: '', icerik: '', ozet: '', gorsel: '', kategori: 'Kulüp', tarih: new Date().toISOString().split('T')[0], slug: '' });
+function HaberForm({ haber, onKaydet, onKapat }: { haber?: Haber; onKaydet: (d: Partial<Haber>) => Promise<void>; onKapat: () => void }) {
+  const [form, setForm] = useState<Partial<Haber>>(haber || { baslik: '', icerik: '', ozet: '', gorsel: '', kategori: 'Kulüp', tarih: new Date().toISOString().split('T')[0], slug: '', yazar: '1453 İstanbul AS Basın' });
+  const [hata, setHata] = useState('');
+  const [kaydediliyor, setKaydediliyor] = useState(false);
   const set = (k: keyof Haber, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const adres = slugify(form.slug || form.baslik || '');
+
+  const gonder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.gorsel) { setHata('Kapak görseli zorunlu. Görsel yükleyin ya da adres yapıştırın.'); return; }
+    if (!form.ozet?.trim()) { setHata('Özet zorunlu (haber listesinde ve paylaşımlarda görünür).'); return; }
+    setHata(''); setKaydediliyor(true);
+    try { await onKaydet(form); }
+    catch (err) { setHata(err instanceof Error ? err.message : 'Kayıt başarısız.'); }
+    finally { setKaydediliyor(false); }
+  };
+
   return (
-    <form onSubmit={e => { e.preventDefault(); onKaydet(form); }} className="space-y-4">
-      <FI label="Başlık" required value={form.baslik || ''} onChange={e => set('baslik', e.target.value)} placeholder="Haber başlığı" />
-      <FI label="Slug (URL)" value={form.slug || ''} onChange={e => set('slug', e.target.value)} placeholder="haber-basligi (boş bırakırsan otomatik)" />
+    <form onSubmit={gonder} className="space-y-4">
+      <FI label="Başlık" required value={form.baslik || ''} onChange={e => set('baslik', e.target.value)} placeholder="Haber başlığı (emoji kullanmayın)" />
+      <div>
+        <FI label="Adres (isteğe bağlı)" value={form.slug || ''} onChange={e => set('slug', e.target.value)} placeholder="Boş bırakırsanız başlıktan otomatik oluşur" />
+        <p className="text-[11px] text-gray-400 mt-1">Adres: <span className="font-mono text-gray-600">/haberler/{adres || '…'}</span></p>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <FI label="Tarih" required type="date" value={form.tarih || ''} onChange={e => set('tarih', e.target.value)} />
         <FS label="Kategori" value={form.kategori || 'Kulüp'} onChange={e => set('kategori', e.target.value)}>
           {['Kulüp', 'Maç', 'Transfer', 'Altyapı', 'Duyuru'].map(k => <option key={k}>{k}</option>)}
         </FS>
       </div>
-      <GorselYukle label="Kapak Görseli" value={form.gorsel || ''} onChange={v => setForm(f => ({ ...f, gorsel: v }))} />
-      <FT label="Özet" rows={2} value={form.ozet || ''} onChange={e => set('ozet', e.target.value)} placeholder="Kısa özet (liste görünümünde gösterilir)" />
-      <FT label="İçerik" required rows={8} value={form.icerik || ''} onChange={e => set('icerik', e.target.value)} placeholder="Haber içeriği..." />
+      <GorselYukle label="Kapak Görseli *" value={form.gorsel || ''} onChange={v => setForm(f => ({ ...f, gorsel: v }))} />
+      <FT label="Özet" required rows={2} value={form.ozet || ''} onChange={e => set('ozet', e.target.value)} placeholder="Kısa özet (liste görünümünde ve paylaşımlarda gösterilir)" />
+      <FT label="İçerik" required rows={8} value={form.icerik || ''} onChange={e => set('icerik', e.target.value)} placeholder="Haber içeriği... Paragrafları bir boş satırla ayırın." />
+      <FI label="Yazar" value={form.yazar || ''} onChange={e => set('yazar', e.target.value)} placeholder="1453 İstanbul AS Basın" />
+      {hata && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-2 rounded-xl">{hata}</div>}
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">İptal</button>
-        <button type="submit" className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] transition-colors">Kaydet</button>
+        <button type="submit" disabled={kaydediliyor} className="px-4 py-2 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#96281B] disabled:opacity-60 transition-colors">{kaydediliyor ? 'Kaydediliyor...' : 'Kaydet'}</button>
       </div>
     </form>
   );
@@ -337,7 +384,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [aktifSekme, setAktifSekme] = useState<Sekme>('maclar');
   const [loading, setLoading] = useState(true);
-  const [bildirim, setBildirim] = useState('');
+  const [bildirim, setBildirim] = useState<{ mesaj: string; tur: 'basari' | 'hata' } | null>(null);
 
   // Mevcut data states
   const [maclar, setMaclar] = useState<Mac[]>([]);
@@ -359,7 +406,16 @@ export default function AdminDashboard() {
   const [yonetimModal, setYonetimModal] = useState<{ acik: boolean; uye?: YonetimUye }>({ acik: false });
   const [sponsorModal, setSponsorModal] = useState<{ acik: boolean; sponsor?: Sponsor }>({ acik: false });
 
-  const goster = (mesaj: string) => { setBildirim(mesaj); setTimeout(() => setBildirim(''), 3000); };
+  const goster = (mesaj: string, tur: 'basari' | 'hata' = 'basari') => {
+    setBildirim({ mesaj, tur });
+    setTimeout(() => setBildirim(b => (b?.mesaj === mesaj ? null : b)), tur === 'hata' ? 8000 : 3000);
+  };
+
+  // Hata olursa kırmızı uyarı gösterir; modal açık kalır, girilen bilgiler kaybolmaz.
+  const guvenli = <A extends unknown[]>(is: (...arg: A) => Promise<void>) => async (...arg: A) => {
+    try { await is(...arg); }
+    catch (err) { goster(err instanceof Error ? err.message : 'İşlem başarısız.', 'hata'); }
+  };
 
   const veriYukle = useCallback(async () => {
     try {
@@ -414,110 +470,117 @@ export default function AdminDashboard() {
   };
 
   // ===== MAÇ CRUD =====
-  const macKaydet = async (data: Partial<Mac>) => {
+  const macKaydet = guvenli(async (data: Partial<Mac>) => {
     if (macModal.mac) {
       const yeni = maclar.map(m => m.id === macModal.mac!.id ? { ...m, ...data } : m);
-      await fetch('/api/maclar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/maclar', 'PUT', yeni);
       setMaclar(yeni); goster('Maç güncellendi');
     } else {
-      const res = await fetch('/api/maclar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, id: Date.now().toString() }) });
-      const yeni = await res.json();
+      const yeni = await istek<Mac>('/api/maclar', 'POST', { ...data, id: Date.now().toString() });
       setMaclar(p => [yeni, ...p]); goster('Maç eklendi');
     }
     setMacModal({ acik: false });
-  };
+  });
 
-  const macSil = async (id: string) => {
+  const macSil = guvenli(async (id: string) => {
     if (!confirm('Bu maçı silmek istediğinizden emin misiniz?')) return;
     const yeni = maclar.filter(m => m.id !== id);
-    await fetch('/api/maclar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+    await istek('/api/maclar', 'PUT', yeni);
     setMaclar(yeni); goster('Maç silindi');
-  };
+  });
 
   // ===== HABER CRUD =====
+  // Hata olursa formun içinde gösterilir; modal açık kalır.
   const haberKaydet = async (data: Partial<Haber>) => {
     if (haberModal.haber) {
       const yeni = haberler.map(h => h.id === haberModal.haber!.id ? { ...h, ...data } : h);
-      await fetch('/api/haberler', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
-      setHaberler(yeni); goster('Haber güncellendi');
+      const sonuc = await istek<{ haberler: Haber[] }>('/api/haberler', 'PUT', yeni);
+      setHaberler(sonuc.haberler); goster('Haber güncellendi');
     } else {
-      const res = await fetch('/api/haberler', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const yeni = await res.json();
-      setHaberler(p => [yeni, ...p]); goster('Haber eklendi');
+      const yeni = await istek<Haber>('/api/haberler', 'POST', data);
+      setHaberler(p => [yeni, ...p].sort((a, b) => b.tarih.localeCompare(a.tarih))); goster('Haber eklendi');
     }
     setHaberModal({ acik: false });
   };
 
-  const haberSil = async (id: string) => {
+  // Tek seferlik: tüm haber adreslerini Türkçe uyumlu hâle getirir, eski linkler yönlenir.
+  const adresleriDuzelt = guvenli(async () => {
+    if (!confirm('Tüm haber adresleri başlıklardan yeniden oluşturulacak (ör. /haberler/is-birligimiz-hayirli-olsun). Eski linkler otomatik olarak yeni adrese yönlenir. Devam edilsin mi?')) return;
+    const sonuc = await istek<{ degisen: number }>('/api/haberler/adresleri-duzelt', 'POST');
+    setHaberler(await istek<Haber[]>('/api/haberler'));
+    goster(sonuc.degisen > 0 ? `${sonuc.degisen} haberin adresi düzeltildi` : 'Tüm adresler zaten düzgün');
+  });
+
+  const haberSil = guvenli(async (id: string) => {
     if (!confirm('Bu haberi silmek istediğinizden emin misiniz?')) return;
-    await fetch('/api/haberler', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    await istek('/api/haberler', 'DELETE', { id });
     setHaberler(p => p.filter(h => h.id !== id)); goster('Haber silindi');
-  };
+  });
 
   // ===== PUAN CRUD =====
-  const puanKaydet = async (data: Partial<PuanTablosu>) => {
+  const puanKaydet = guvenli(async (data: Partial<PuanTablosu>) => {
     if (puanModal.takim) {
       const yeni = puanTablosu.map(t => t.id === puanModal.takim!.id ? { ...t, ...data } : t);
-      await fetch('/api/puan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/puan', 'PUT', yeni);
       setPuanTablosu(yeni); goster('Takım güncellendi');
     } else {
       const yeniTakim = { ...data, id: Date.now().toString() } as PuanTablosu;
       const yeni = [...puanTablosu, yeniTakim].sort((a, b) => b.puan - a.puan);
-      await fetch('/api/puan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/puan', 'PUT', yeni);
       setPuanTablosu(yeni); goster('Takım eklendi');
     }
     setPuanModal({ acik: false });
-  };
+  });
 
-  const puanSil = async (id: string) => {
+  const puanSil = guvenli(async (id: string) => {
     if (!confirm('Bu takımı silmek istediğinizden emin misiniz?')) return;
     const yeni = puanTablosu.filter(t => t.id !== id);
-    await fetch('/api/puan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+    await istek('/api/puan', 'PUT', yeni);
     setPuanTablosu(yeni); goster('Takım silindi');
-  };
+  });
 
   // ===== GALERİ CRUD =====
-  const galeriKaydet = async (data: Partial<GaleriOge>) => {
+  const galeriKaydet = guvenli(async (data: Partial<GaleriOge>) => {
     if (galeriModal.oge) {
       const yeni = galeri.map(g => g.id === galeriModal.oge!.id ? { ...g, ...data } : g);
-      await fetch('/api/galeri', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/galeri', 'PUT', yeni);
       setGaleri(yeni); goster('Fotoğraf güncellendi');
     } else {
       const yeniOge = { ...data, id: Date.now().toString() } as GaleriOge;
       const yeni = [yeniOge, ...galeri];
-      await fetch('/api/galeri', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/galeri', 'PUT', yeni);
       setGaleri(yeni); goster('Fotoğraf eklendi');
     }
     setGaleriModal({ acik: false });
-  };
+  });
 
-  const galeriSil = async (id: string) => {
+  const galeriSil = guvenli(async (id: string) => {
     if (!confirm('Bu fotoğrafı silmek istediğinizden emin misiniz?')) return;
     const yeni = galeri.filter(g => g.id !== id);
-    await fetch('/api/galeri', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+    await istek('/api/galeri', 'PUT', yeni);
     setGaleri(yeni); goster('Fotoğraf silindi');
-  };
+  });
 
   // ===== MESAJ İŞLEMLERİ =====
-  const mesajOkundu = async (id: string) => {
+  const mesajOkundu = guvenli(async (id: string) => {
     const yeni = mesajlar.map(m => m.id === id ? { ...m, okundu: true } : m);
-    await fetch('/api/mesajlar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+    await istek('/api/mesajlar', 'PUT', yeni);
     setMesajlar(yeni);
-  };
+  });
 
-  const mesajSil = async (id: string) => {
+  const mesajSil = guvenli(async (id: string) => {
     if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
     const yeni = mesajlar.filter(m => m.id !== id);
-    await fetch('/api/mesajlar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+    await istek('/api/mesajlar', 'PUT', yeni);
     setMesajlar(yeni); goster('Mesaj silindi');
-  };
+  });
 
   // ===== SİTE AYARLARI KAYDET =====
-  const siteAyarlariKaydet = async () => {
+  const siteAyarlariKaydet = guvenli(async () => {
     if (!siteAyarlari) return;
-    await fetch('/api/site-ayarlari', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(siteAyarlari) });
+    await istek('/api/site-ayarlari', 'PUT', siteAyarlari);
     goster('Site ayarları kaydedildi');
-  };
+  });
 
   const ayarSet = (path: string, value: string) => {
     if (!siteAyarlari) return;
@@ -533,44 +596,42 @@ export default function AdminDashboard() {
   };
 
   // ===== YÖNETİM CRUD =====
-  const yonetimKaydet = async (data: Partial<YonetimUye>) => {
+  const yonetimKaydet = guvenli(async (data: Partial<YonetimUye>) => {
     if (yonetimModal.uye) {
       const yeni = yonetim.map(u => u.id === yonetimModal.uye!.id ? { ...u, ...data } : u);
-      await fetch('/api/yonetim', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/yonetim', 'PUT', yeni);
       setYonetim(yeni); goster('Üye güncellendi');
     } else {
-      const res = await fetch('/api/yonetim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const yeniUye = await res.json();
+      const yeniUye = await istek<YonetimUye>('/api/yonetim', 'POST', data);
       setYonetim(p => [...p, yeniUye]); goster('Üye eklendi');
     }
     setYonetimModal({ acik: false });
-  };
+  });
 
-  const yonetimSil = async (id: string) => {
+  const yonetimSil = guvenli(async (id: string) => {
     if (!confirm('Bu üyeyi silmek istediğinizden emin misiniz?')) return;
-    await fetch('/api/yonetim', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    await istek('/api/yonetim', 'DELETE', { id });
     setYonetim(p => p.filter(u => u.id !== id)); goster('Üye silindi');
-  };
+  });
 
   // ===== SPONSOR CRUD =====
-  const sponsorKaydet = async (data: Partial<Sponsor>) => {
+  const sponsorKaydet = guvenli(async (data: Partial<Sponsor>) => {
     if (sponsorModal.sponsor) {
       const yeni = sponsorlar.map(s => s.id === sponsorModal.sponsor!.id ? { ...s, ...data } : s);
-      await fetch('/api/sponsorlar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(yeni) });
+      await istek('/api/sponsorlar', 'PUT', yeni);
       setSponsorlar(yeni); goster('Sponsor güncellendi');
     } else {
-      const res = await fetch('/api/sponsorlar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const yeniSponsor = await res.json();
+      const yeniSponsor = await istek<Sponsor>('/api/sponsorlar', 'POST', data);
       setSponsorlar(p => [...p, yeniSponsor]); goster('Sponsor eklendi');
     }
     setSponsorModal({ acik: false });
-  };
+  });
 
-  const sponsorSil = async (id: string) => {
+  const sponsorSil = guvenli(async (id: string) => {
     if (!confirm('Bu sponsoru silmek istediğinizden emin misiniz?')) return;
-    await fetch('/api/sponsorlar', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    await istek('/api/sponsorlar', 'DELETE', { id });
     setSponsorlar(p => p.filter(s => s.id !== id)); goster('Sponsor silindi');
-  };
+  });
 
   // ===== TFF SENKRONIZASYON =====
   const [tffYukleniyor, setTffYukleniyor] = useState(false);
@@ -615,8 +676,8 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       {bildirim && (
-        <div className="fixed top-4 right-4 z-50 bg-[#1A4D2E] text-white px-4 py-2 rounded-xl text-sm shadow-lg">
-          ✓ {bildirim}
+        <div role="status" className={`fixed top-4 right-4 z-[60] max-w-sm text-white px-4 py-2.5 rounded-xl text-sm shadow-lg ${bildirim.tur === 'hata' ? 'bg-red-600' : 'bg-[#1A4D2E]'}`}>
+          {bildirim.tur === 'hata' ? '⚠ ' : '✓ '}{bildirim.mesaj}
         </div>
       )}
 
@@ -709,13 +770,18 @@ export default function AdminDashboard() {
             <div>
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-bold text-gray-900">Haberler <span className="text-gray-400 font-normal text-sm">({haberler.length})</span></h2>
-                <button onClick={() => setHaberModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Haber Ekle</button>
+                <div className="flex gap-2">
+                  <button onClick={adresleriDuzelt} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs px-3 py-2 rounded-lg font-medium transition-colors" title="Türkçe karakterleri kaybolmuş haber adreslerini düzeltir">Adresleri düzelt</button>
+                  <button onClick={() => setHaberModal({ acik: true })} className="bg-[#C0392B] hover:bg-[#96281B] text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">+ Haber Ekle</button>
+                </div>
               </div>
               <div className="divide-y divide-gray-100">
                 {haberler.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">Henüz haber yok.</div> :
                   haberler.map(haber => (
                     <div key={haber.id} className="p-4 flex items-center gap-4 hover:bg-gray-50">
-                      {haber.gorsel && <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0"><Image src={haber.gorsel} alt={haber.baslik} fill className="object-cover" sizes="80px" unoptimized /></div>}
+                      {haber.gorsel
+                        ? <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0"><Image src={haber.gorsel} alt={haber.baslik} fill className="object-cover" sizes="80px" unoptimized /></div>
+                        : <div className="w-20 h-14 rounded-lg flex-shrink-0 border border-dashed border-red-300 bg-red-50 text-red-500 text-[10px] font-semibold flex items-center justify-center text-center leading-tight">Görsel<br />yok</div>}
                       <div className="flex-1 min-w-0">
                         <div className="text-gray-900 text-sm font-semibold truncate">{haber.baslik}</div>
                         <div className="text-gray-400 text-xs mt-0.5">{haber.tarih} · <span className="text-[#C0392B]">{haber.kategori}</span></div>

@@ -1,81 +1,66 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import type { Haber } from '@/lib/types';
+import HaberKapak from '@/components/haber/HaberKapak';
+import SayfaBasligi from '@/components/ui/SayfaBasligi';
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
-}
+const tarihYaz = (d: string) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
 export default function HaberlerClient({ haberler }: { haberler: Haber[] }) {
   const kategoriler = ['Tümü', ...Array.from(new Set(haberler.map((h) => h.kategori)))];
   const [aktif, setAktif] = useState('Tümü');
-
-  const filtrelenmis = aktif === 'Tümü' ? haberler : haberler.filter((h) => h.kategori === aktif);
+  const liste = aktif === 'Tümü' ? haberler : haberler.filter((h) => h.kategori === aktif);
+  const [manset, ...digerleri] = liste;
 
   return (
-    <div className="pt-20 bg-[#f8f9fa] min-h-screen">
-      {/* Banner */}
-      <div className="bg-[#1A4D2E] py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-3xl md:text-4xl font-black text-white mb-2">
-            Son <span className="text-[#D4AF37]">Haberler</span>
-          </h1>
-          <p className="text-green-200 text-sm">Kulüpten son gelişmeler ve duyurular</p>
-        </div>
-      </div>
-      <div className="h-1 bg-[#C0392B]" />
+    <div className="bg-fildisi min-h-screen">
+      <SayfaBasligi etiket="Haberler" baslik="Kulüpten haberler" aciklama="Transferler, maçlar, altyapı ve kulüp duyuruları." />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Kategori filtreleri */}
-        <div className="flex gap-2 flex-wrap mb-8">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-10 md:py-14">
+        <div role="tablist" aria-label="Haber kategorileri" className="flex gap-6 overflow-x-auto border-b border-cizgi">
           {kategoriler.map((kat) => (
-            <button key={kat} onClick={() => setAktif(kat)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                aktif === kat
-                  ? 'bg-[#1A4D2E] text-white shadow-md'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-[#1A4D2E] hover:text-[#1A4D2E] card-shadow'
-              }`}>
+            <button key={kat} type="button" role="tab" aria-selected={aktif === kat} onClick={() => setAktif(kat)}
+              className={`shrink-0 pb-3 -mb-px border-b-2 text-sm font-semibold tracking-wide transition-colors ${aktif === kat ? 'border-al text-zumrut' : 'border-transparent text-kursun hover:text-zumrut'}`}>
               {kat}
             </button>
           ))}
         </div>
 
-        {/* Haber Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtrelenmis.map((haber) => (
-            <Link key={haber.id} href={`/haberler/${haber.slug}`}
-              className="group bg-white rounded-xl overflow-hidden card-shadow border border-gray-100 hover:border-[#1A4D2E]/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-              <div className="relative h-52 overflow-hidden">
-                <Image src={haber.gorsel} alt={haber.baslik} fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
-                <div className="absolute top-3 left-3">
-                  <span className="bg-[#C0392B] text-white text-xs px-2.5 py-1 rounded-full font-semibold">
-                    {haber.kategori}
-                  </span>
-                </div>
+        {manset ? (
+          <>
+            <Link href={`/haberler/${manset.slug}`} className="group mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+              <div className="relative lg:col-span-7 aspect-[16/9] overflow-hidden bg-gece">
+                <HaberKapak gorsel={manset.gorsel} baslik={manset.baslik} sizes="(max-width: 1024px) 100vw, 60vw" oncelikli
+                  className="transition-transform duration-500 group-hover:scale-[1.03]" />
               </div>
-              <div className="p-5">
-                <h2 className="font-bold text-gray-900 group-hover:text-[#1A4D2E] transition-colors line-clamp-2 mb-2 text-base">
-                  {haber.baslik}
-                </h2>
-                <p className="text-gray-500 text-sm line-clamp-2 mb-4">{haber.ozet}</p>
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>{formatDate(haber.tarih)}</span>
-                  <span className="text-[#1A4D2E] font-semibold group-hover:text-[#C0392B] transition-colors">Devamını oku →</span>
-                </div>
+              <div className="lg:col-span-5">
+                <span className="text-xs tracking-[0.2em] text-al font-semibold uppercase">{manset.kategori} · {tarihYaz(manset.tarih)}</span>
+                <h2 className="mt-3 font-baslik font-bold text-zumrut text-4xl md:text-5xl leading-[1.02] group-hover:text-al transition-colors">{manset.baslik}</h2>
+                {manset.ozet && <p className="mt-4 text-[#3A423E] text-lg leading-relaxed line-clamp-3">{manset.ozet}</p>}
+                <span className="inline-block mt-5 text-sm font-semibold text-zumrut border-b border-zumrut pb-0.5">Haberi oku</span>
               </div>
             </Link>
-          ))}
-        </div>
 
-        {filtrelenmis.length === 0 && (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-xl font-medium">Bu kategoride haber bulunamadı.</p>
-          </div>
+            {digerleri.length > 0 && (
+              <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+                {digerleri.map((haber) => (
+                  <Link key={haber.id} href={`/haberler/${haber.slug}`} className="group flex flex-col">
+                    <div className="relative aspect-[3/2] overflow-hidden bg-gece">
+                      <HaberKapak gorsel={haber.gorsel} baslik={haber.baslik} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="transition-transform duration-500 group-hover:scale-[1.03]" />
+                    </div>
+                    <span className="mt-4 text-[11px] tracking-[0.2em] text-al font-semibold uppercase">{haber.kategori} · {tarihYaz(haber.tarih)}</span>
+                    <span className="mt-2 font-baslik font-bold text-zumrut text-2xl leading-tight line-clamp-3 group-hover:text-al transition-colors">{haber.baslik}</span>
+                    {haber.ozet && <span className="mt-2 text-[15px] text-[#3A423E] leading-relaxed line-clamp-2">{haber.ozet}</span>}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="py-20 text-center text-kursun">Bu kategoride haber bulunamadı.</p>
         )}
       </div>
     </div>

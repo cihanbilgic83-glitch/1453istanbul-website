@@ -1,29 +1,23 @@
 import type { Metadata } from 'next';
 import { getSiteAyarlari } from '@/lib/data';
 import IletisimClient from './IletisimClient';
+import SayfaBasligi from '@/components/ui/SayfaBasligi';
 
 export const metadata: Metadata = {
   title: 'İletişim',
-  description: '1453 İstanbul AS Spor Kulübü ile iletişime geçin.',
+  description: '1453 İstanbul AS Spor Kulübü ile iletişime geçin: altyapı seçmeleri, üyelik ve sponsorluk.',
 };
 
 export const dynamic = 'force-dynamic';
 
-export default async function IletisimPage() {
-  const ayarlar = await getSiteAyarlari();
+type Props = { searchParams: Promise<{ konu?: string }> };
 
+export default async function IletisimPage({ searchParams }: Props) {
+  const [ayarlar, { konu }] = await Promise.all([getSiteAyarlari(), searchParams]);
   return (
-    <div className="pt-20 bg-[#f8f9fa] min-h-screen">
-      <div className="bg-[#1A4D2E] py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-3xl md:text-4xl font-black text-white mb-2">
-            Bize <span className="text-[#D4AF37]">Ulaşın</span>
-          </h1>
-          <p className="text-green-200 text-sm">Sorularınız için bizimle iletişime geçin</p>
-        </div>
-      </div>
-      <div className="h-1 bg-[#C0392B]" />
-      <IletisimClient ayarlar={ayarlar} />
+    <div className="bg-fildisi min-h-screen">
+      <SayfaBasligi etiket="İletişim" baslik="Bize ulaşın" aciklama="Kapımız 1453'lü olmak isteyen herkese açık." />
+      <IletisimClient ayarlar={ayarlar} baslangicKonusu={konu} />
     </div>
   );
 }

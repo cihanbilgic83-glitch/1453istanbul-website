@@ -45,7 +45,8 @@ export interface Haber {
   gorsel: string;
   kategori: string;
   tarih: string;
-  yazar: string;
+  yazar?: string;
+  eskiSluglar?: string[];
 }
 
 export interface PuanTablosu {
