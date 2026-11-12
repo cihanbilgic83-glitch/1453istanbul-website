@@ -1,7 +1,7 @@
 import { Redis } from '@upstash/redis';
 import fs from 'fs';
 import path from 'path';
-import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj } from './types';
+import type { Mac, Haber, PuanTablosu, GaleriOge, Mesaj, TakimKodu, TffKaynak, TffDurum } from './types';
 import { adresiCoz, slugify } from './slug';
 import { tarihSirala } from './tarih';
 
@@ -99,11 +99,46 @@ export async function saveHaberler(data: Haber[]): Promise<void> {
 }
 
 // ---- PUAN TABLOSU ----
-export async function getPuanTablosu(): Promise<PuanTablosu[]> {
-  return getList<PuanTablosu>('puan-tablosu', 'puan-tablosu.json');
+// A takımın tablosu eski anahtarda durur; altyapı takımlarının ayrı anahtarı vardır.
+const puanAnahtari = (takim: TakimKodu) => (takim === 'a' ? 'puan-tablosu' : `puan-tablosu-${takim}`);
+
+export async function getPuanTablosu(takim: TakimKodu = 'a'): Promise<PuanTablosu[]> {
+  return getList<PuanTablosu>(puanAnahtari(takim), takim === 'a' ? 'puan-tablosu.json' : `puan-tablosu-${takim}.json`);
 }
-export async function savePuanTablosu(data: PuanTablosu[]): Promise<void> {
-  await setList('puan-tablosu', data);
+export async function savePuanTablosu(data: PuanTablosu[], takim: TakimKodu = 'a'): Promise<void> {
+  await setList(puanAnahtari(takim), data);
+}
+
+// ---- TFF OTOMATİK GÜNCELLEME ----
+export const VARSAYILAN_TFF_KAYNAKLARI: TffKaynak[] = [
+  { takim: 'a', adres: '' },
+  { takim: 'u17', adres: '/puantaj-ve-fikstur/2026-2027/u17-b-ligi/30/178/6069' },
+  { takim: 'u14', adres: '/puantaj-ve-fikstur/2026-2027/u14-b-ligi/30/181/6154' },
+];
+
+export async function getTffKaynaklari(): Promise<TffKaynak[]> {
+  try {
+    const kayitli = await redis.get<TffKaynak[]>('tff-kaynaklar');
+    if (Array.isArray(kayitli) && kayitli.length) {
+      // Sonradan eklenen takımlar da listede olsun
+      return VARSAYILAN_TFF_KAYNAKLARI.map((v) => kayitli.find((k) => k.takim === v.takim) ?? v);
+    }
+  } catch { /* Redis yoksa varsayılanlar */ }
+  return VARSAYILAN_TFF_KAYNAKLARI;
+}
+export async function saveTffKaynaklari(data: TffKaynak[]): Promise<void> {
+  await setObj('tff-kaynaklar', data);
+}
+
+export async function getTffDurum(): Promise<TffDurum> {
+  try {
+    const d = await redis.get<TffDurum>('tff-durum');
+    if (d && typeof d === 'object') return { ...d, takimlar: d.takimlar ?? {} };
+  } catch { /* yok */ }
+  return { takimlar: {} };
+}
+export async function saveTffDurum(data: TffDurum): Promise<void> {
+  await setObj('tff-durum', data);
 }
 
 // ---- GALERİ ----

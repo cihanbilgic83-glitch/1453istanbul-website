@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import type { Mac, PuanTablosu, MacOlay, MacKart } from '@/lib/types';
+import Link from 'next/link';
+import type { Mac, PuanTablosu, MacOlay, MacKart, MacDegisiklik, KadroOyuncu } from '@/lib/types';
+import type { TakimTanimi } from '@/lib/takimlar';
 import { bizimTakimMi } from '@/lib/takim';
 import { bugununTarihi } from '@/lib/tarih';
 import SayfaBasligi from '@/components/ui/SayfaBasligi';
 import Etiket from '@/components/ui/Etiket';
 
-const tarihYaz = (d: string) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+const tarihYaz = (d: string) => (d ? new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Tarih belirlenmedi');
+const kucukBaslik = 'text-[11px] tracking-[0.2em] text-kursun font-semibold uppercase';
 
 type Sonuc = 'G' | 'B' | 'M';
 const SONUC_STILI: Record<Sonuc, { sinif: string; ad: string }> = {
@@ -23,9 +26,13 @@ function SonucRozeti({ sonuc }: { sonuc: Sonuc }) {
   );
 }
 
-function OlayListesi({ goller, asistler, kartlar }: { goller: MacOlay[]; asistler: MacOlay[]; kartlar: MacKart[] }) {
+function OlayListesi({ goller, asistler, kartlar, degisiklikler, kadro }: { goller: MacOlay[]; asistler: MacOlay[]; kartlar: MacKart[]; degisiklikler: MacDegisiklik[]; kadro: KadroOyuncu[] }) {
+  const ilk11 = kadro.filter((o) => o.ilk11);
+  const yedek = kadro.filter((o) => !o.ilk11);
+  const bos = goller.length + kartlar.length + degisiklikler.length + kadro.length === 0;
   return (
     <div className="space-y-1.5 text-sm text-[#2A302D]">
+      {bos && <p className="text-kursun text-xs">Olay kaydı yok.</p>}
       {[...goller].sort((a, b) => a.dakika - b.dakika).map((g, i) => {
         const asist = asistler.find((a) => a.dakika === g.dakika);
         return (
@@ -42,6 +49,26 @@ function OlayListesi({ goller, asistler, kartlar }: { goller: MacOlay[]; asistle
           <span>{k.oyuncu}</span>
         </div>
       ))}
+      {[...degisiklikler].sort((a, b) => a.dakika - b.dakika).map((d, i) => (
+        <div key={`d${i}`} className="flex gap-2">
+          <span className="w-9 shrink-0 text-kursun rakam">{d.dakika}&apos;</span>
+          <span><span className="text-zumrut" aria-label="Giren">▲</span> {d.giren} <span className="text-al ml-1" aria-label="Çıkan">▼</span> <span className="text-kursun">{d.cikan}</span></span>
+        </div>
+      ))}
+      {kadro.length > 0 && (
+        <div className="pt-3 mt-2 border-t border-cizgi/70 grid grid-cols-1 gap-3">
+          <div>
+            <div className={`${kucukBaslik} mb-1.5`}>İlk 11</div>
+            <ul className="text-[13px] leading-6">{ilk11.map((o, i) => <li key={i}><span className="inline-block w-6 text-kursun rakam">{o.no}</span>{o.ad}</li>)}</ul>
+          </div>
+          {yedek.length > 0 && (
+            <div>
+              <div className={`${kucukBaslik} mb-1.5`}>Yedekler</div>
+              <ul className="text-[13px] leading-6 text-kursun">{yedek.map((o, i) => <li key={i}><span className="inline-block w-6 rakam">{o.no}</span>{o.ad}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -50,7 +77,7 @@ function MacSatiri({ mac, bugun }: { mac: Mac; bugun: string }) {
   const [acik, setAcik] = useState(false);
   const evBiz = bizimTakimMi(mac.ev_sahibi);
   const depBiz = bizimTakimMi(mac.misafir);
-  const sonucBekleniyor = mac.durum === 'gelecek' && mac.tarih < bugun;
+  const sonucBekleniyor = mac.durum === 'gelecek' && !!mac.tarih && mac.tarih < bugun;
 
   let sonuc: Sonuc | null = null;
   if (mac.durum === 'tamamlandi' && mac.ev_gol !== null && mac.mis_gol !== null && (evBiz || depBiz)) {
@@ -59,23 +86,27 @@ function MacSatiri({ mac, bugun }: { mac: Mac; bugun: string }) {
     sonuc = biz > rakip ? 'G' : biz === rakip ? 'B' : 'M';
   }
 
-  const ayrinti = mac.durum === 'tamamlandi' && ((mac.goller?.length ?? 0) > 0 || (mac.kartlar?.length ?? 0) > 0);
-  const taraf = (ad: string) => ({
+  const ayrinti = mac.durum === 'tamamlandi' && ((mac.goller?.length ?? 0) > 0 || (mac.kartlar?.length ?? 0) > 0
+    || (mac.degisiklikler?.length ?? 0) > 0 || (mac.kadro?.ev.length ?? 0) > 0);
+  const taraf = (ad: string, kadro: KadroOyuncu[] = []) => ({
     goller: mac.goller?.filter((g) => g.takim === ad) ?? [],
     asistler: mac.asistler?.filter((a) => a.takim === ad) ?? [],
     kartlar: mac.kartlar?.filter((k) => k.takim === ad) ?? [],
+    degisiklikler: mac.degisiklikler?.filter((d) => d.takim === ad) ?? [],
+    kadro,
   });
 
   const icerik = (
     <div className="grid grid-cols-[1fr_auto_1fr] sm:grid-cols-[150px_1fr_auto_1fr_130px] items-center gap-x-3 gap-y-2 px-4 sm:px-6 py-4">
       <div className="col-span-3 sm:col-span-1 text-xs text-kursun">
-        <span className="font-semibold text-murekkep">{tarihYaz(mac.tarih)}</span> · {mac.saat}
+        <span className="font-semibold text-murekkep">{tarihYaz(mac.tarih)}</span>{mac.saat ? ` · ${mac.saat}` : ''}
+        {mac.hafta ? <span className="block sm:mt-0.5 text-[11px] tracking-wide">{mac.hafta}. hafta</span> : null}
       </div>
       <span className={`text-right font-baslik font-bold uppercase text-base sm:text-lg leading-tight ${evBiz ? 'text-zumrut' : 'text-[#3A423E]'}`}>{mac.ev_sahibi}</span>
       {mac.durum === 'tamamlandi' ? (
         <span className="bg-gece text-mat font-baslik font-extrabold text-xl px-3 py-1 rakam min-w-[64px] text-center">{mac.ev_gol}–{mac.mis_gol}</span>
       ) : (
-        <span className="border border-al/40 text-al text-xs font-bold px-3 py-1.5 min-w-[64px] text-center">{mac.saat}</span>
+        <span className="border border-al/40 text-al text-xs font-bold px-3 py-1.5 min-w-[64px] text-center">{mac.durum === 'ertelendi' ? '–' : mac.saat || 'vs'}</span>
       )}
       <span className={`font-baslik font-bold uppercase text-base sm:text-lg leading-tight ${depBiz ? 'text-zumrut' : 'text-[#3A423E]'}`}>{mac.misafir}</span>
       <div className="col-span-3 sm:col-span-1 flex items-center justify-end gap-2 text-xs">
@@ -98,27 +129,53 @@ function MacSatiri({ mac, bugun }: { mac: Mac; bugun: string }) {
       {acik && ayrinti && (
         <div className="border-t border-cizgi bg-fildisi px-4 sm:px-6 py-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div><div className="text-[11px] tracking-[0.2em] text-kursun font-semibold uppercase mb-2">{mac.ev_sahibi}</div><OlayListesi {...taraf(mac.ev_sahibi)} /></div>
-            <div><div className="text-[11px] tracking-[0.2em] text-kursun font-semibold uppercase mb-2">{mac.misafir}</div><OlayListesi {...taraf(mac.misafir)} /></div>
+            <div><div className={`${kucukBaslik} mb-2`}>{mac.ev_sahibi}</div><OlayListesi {...taraf(mac.ev_sahibi, mac.kadro?.ev)} /></div>
+            <div><div className={`${kucukBaslik} mb-2`}>{mac.misafir}</div><OlayListesi {...taraf(mac.misafir, mac.kadro?.mis)} /></div>
           </div>
-          <div className="mt-4 pt-3 border-t border-cizgi text-xs text-kursun">{mac.stadyum}{mac.lig ? ` · ${mac.lig}` : ''}</div>
+          <div className="mt-4 pt-3 border-t border-cizgi text-xs text-kursun">
+            {[mac.stadyum, mac.lig, mac.hakem ? `Hakem: ${mac.hakem}` : ''].filter(Boolean).join(' · ')}
+            {mac.kaynak === 'tff' && <span className="block mt-1 text-[11px]">Kaynak: TFF İstanbul İl Temsilciliği</span>}
+          </div>
         </div>
       )}
     </li>
   );
 }
 
-export default function FiksturClient({ maclar, puanTablosu, sezon }: { maclar: Mac[]; puanTablosu: PuanTablosu[]; sezon?: string }) {
+type Sekme = TakimTanimi & { sayi: number };
+
+export default function FiksturClient({ takim, sekmeler, maclar, puanTablosu, sezon }: { takim: TakimTanimi; sekmeler: Sekme[]; maclar: Mac[]; puanTablosu: PuanTablosu[]; sezon?: string }) {
   const bugun = bugununTarihi();
-  const sirali = [...maclar].sort((a, b) => b.tarih.localeCompare(a.tarih) || (b.saat || '').localeCompare(a.saat || ''));
-  const gelecek = sirali.filter((m) => m.durum === 'gelecek' && m.tarih >= bugun).reverse();
-  // Tamamlanan maçlar + tarihi geçtiği hâlde skoru girilmemiş maçlar
-  const gecmis = sirali.filter((m) => m.durum === 'tamamlandi' || m.durum === 'ertelendi' || (m.durum === 'gelecek' && m.tarih < bugun));
+  const sirali = [...maclar].sort((a, b) => (b.tarih || '9999').localeCompare(a.tarih || '9999') || (b.saat || '').localeCompare(a.saat || ''));
+  // Gelecek: tarihi bugün ya da sonra olanlar (yakından uzağa), sonra tarihi belirlenmemiş olanlar
+  const gelecek = [
+    ...sirali.filter((m) => m.durum === 'gelecek' && m.tarih && m.tarih >= bugun).reverse(),
+    // Tarihi henüz belirlenmemiş ya da ertelenip yeni tarihi verilmemiş maçlar
+    ...sirali.filter((m) => (m.durum === 'gelecek' || m.durum === 'ertelendi') && !m.tarih).sort((a, b) => (a.hafta ?? 0) - (b.hafta ?? 0)),
+  ];
+  // Tamamlanan maçlar + tarihli ertelenenler + tarihi geçtiği hâlde skoru girilmemiş maçlar
+  const gecmis = sirali.filter((m) => m.durum === 'tamamlandi' || (m.durum === 'ertelendi' && !!m.tarih) || (m.durum === 'gelecek' && !!m.tarih && m.tarih < bugun));
   const formuOlanlar = puanTablosu.slice(0, 5).filter((t) => (t.form?.length ?? 0) > 0);
+  const ligAdi = sirali.find((m) => m.lig)?.lig;
 
   return (
     <div className="bg-fildisi min-h-screen">
-      <SayfaBasligi etiket={sezon || 'Fikstür'} baslik="Fikstür ve puan durumu" aciklama="Maç takvimi, sonuçlar ve lig tablosu." />
+      <SayfaBasligi etiket={sezon || 'Fikstür'} baslik="Fikstür ve puan durumu" aciklama="A takım ve altyapı takımlarımızın maç takvimi, sonuçları ve lig tabloları." />
+
+      <nav aria-label="Takımlar" className="bg-white border-b border-cizgi sticky top-[72px] z-30">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 flex gap-1 overflow-x-auto">
+          {sekmeler.map((t) => {
+            const aktif = t.kod === takim.kod;
+            return (
+              <Link key={t.kod} href={t.kod === 'a' ? '/fikstur' : `/fikstur?takim=${t.kod}`} scroll={false} aria-current={aktif ? 'page' : undefined}
+                className={`relative px-4 sm:px-6 py-4 font-baslik font-bold uppercase tracking-wide text-base sm:text-lg whitespace-nowrap transition-colors ${aktif ? 'text-zumrut' : 'text-kursun hover:text-murekkep'}`}>
+                {t.ad}
+                {aktif && <span aria-hidden="true" className="absolute left-3 right-3 sm:left-5 sm:right-5 bottom-0 h-[3px] bg-mat" />}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12 md:py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
@@ -129,7 +186,7 @@ export default function FiksturClient({ maclar, puanTablosu, sezon }: { maclar: 
             ) : (
               <div className="mt-5 bg-white border border-cizgi px-6 py-8">
                 <div className="font-baslik font-bold uppercase text-2xl text-zumrut">Fikstür yakında</div>
-                <p className="mt-2 text-sm text-kursun">Yeni sezonun maç programı açıklandığında burada yer alacak.</p>
+                <p className="mt-2 text-sm text-kursun">{takim.uzunAd} için yeni maç programı TFF İstanbul&apos;da yayınlandığında burada kendiliğinden yer alacak.</p>
               </div>
             )}
           </section>
@@ -145,6 +202,10 @@ export default function FiksturClient({ maclar, puanTablosu, sezon }: { maclar: 
 
         <aside>
           <Etiket>Puan durumu</Etiket>
+          {ligAdi && <p className="mt-2 text-xs text-kursun">{takim.uzunAd} · {ligAdi}</p>}
+          {puanTablosu.length === 0 ? (
+            <div className="mt-5 bg-white border border-cizgi px-5 py-6 text-sm text-kursun">Puan tablosu lig başladığında burada yer alacak.</div>
+          ) : (
           <div className="mt-5 bg-white border border-cizgi overflow-x-auto">
             <table className="w-full text-sm rakam">
               <caption className="sr-only">Puan durumu</caption>
@@ -179,6 +240,7 @@ export default function FiksturClient({ maclar, puanTablosu, sezon }: { maclar: 
               </tbody>
             </table>
           </div>
+          )}
 
           {formuOlanlar.length > 0 && (
             <div className="mt-6 bg-white border border-cizgi p-5">

@@ -18,8 +18,29 @@ export interface MacDegisiklik {
   takim: string;
 }
 
+// Kulübün takımları: A takım ve altyapı takımları
+export type TakimKodu = 'a' | 'u17' | 'u14';
+
+export interface KadroOyuncu {
+  no: string;
+  ad: string;
+  ilk11: boolean;
+}
+
 export interface Mac {
   id: string;
+  /** Hangi takımımızın maçı. Boşsa A takım sayılır. */
+  takim?: TakimKodu;
+  /** TFF İstanbul maç numarası (otomatik güncellenen maçlarda) */
+  tffId?: string;
+  /** TFF maç detay sayfasının yolu (/mac/...) */
+  tffAdres?: string;
+  hafta?: number;
+  hakem?: string;
+  kaynak?: 'tff' | 'elle';
+  /** Maç detay sayfası (gol, kart, kadro) TFF'den alındı mı */
+  detayAlindi?: boolean;
+  kadro?: { ev: KadroOyuncu[]; mis: KadroOyuncu[] };
   ev_sahibi: string;
   misafir: string;
   tarih: string;
@@ -81,4 +102,24 @@ export interface Mesaj {
   mesaj: string;
   tarih: string;
   okundu: boolean;
+}
+// TFF İstanbul'dan otomatik güncelleme ayarları
+export interface TffKaynak {
+  takim: TakimKodu;
+  /** Grup sayfasının adresi. A takım için boş bırakılırsa grup kendiliğinden aranır. */
+  adres: string;
+}
+
+export interface TffTakimDurumu {
+  zaman: string;
+  basarili: boolean;
+  mesaj: string;
+  macSayisi?: number;
+  takimSayisi?: number;
+  tumSezonAlindi?: boolean;
+}
+
+export interface TffDurum {
+  sonCalisma?: string;
+  takimlar: Partial<Record<TakimKodu, TffTakimDurumu>>;
 }
