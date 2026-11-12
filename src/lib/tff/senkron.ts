@@ -1,5 +1,7 @@
 // TFF İstanbul'dan puan tablosu, fikstür, skor ve maç detaylarını çekip siteye işler.
-// Zamanlanmış görev (cron) ve panel düğmesi bu modülü çağırır.
+// Sayfalar iki yoldan gelebilir:
+//  - doğrudan: sunucu TFF'ye kendisi bağlanır (TFF sunucumuzu engellediği için şu an çalışmıyor)
+//  - köprü: Türkiye'deki bilgisayarda çalışan program sayfaları okuyup gönderir (onbellekGetirici)
 
 import * as cheerio from 'cheerio';
 import type { CheerioAPI } from 'cheerio';
@@ -42,6 +44,33 @@ function baglantiHatasi(hata: unknown, adres: string): Error {
     CERT_HAS_EXPIRED: 'TFF sitesinin güvenlik sertifikasının süresi dolmuş',
   };
   return new Error(`${aciklama[kod] ?? 'TFF sayfasına ulaşılamadı'} [${kod || 'bilinmiyor'}: ${ayrinti}] (${adres})`);
+}
+
+/** Sayfa getirme yöntemi: doğrudan TFF'den ya da köprünün gönderdiği paketten */
+export type Getirici = (yol: string) => Promise<CheerioAPI>;
+
+/** Köprü paketinde bulunmayan sayfalar: program bunları okuyup bir sonraki turda gönderir */
+export class EksikSayfa extends Error {
+  constructor(public yollar: string[]) { super(`TFF sayfası bekleniyor: ${yollar.join(', ')}`); }
+}
+
+/** Köprünün gönderdiği sayfalardan okur. Boş metin = program o sayfayı TFF'den alamadı. */
+export function onbellekGetirici(sayfalar: Record<string, string>): Getirici {
+  return async (yol) => {
+    if (!(yol in sayfalar)) throw new EksikSayfa([yol]);
+    const html = sayfalar[yol];
+    if (!html) throw new Error(`Bilgisayardaki program bu TFF sayfasını alamadı: ${yol}`);
+    return cheerio.load(html);
+  };
+}
+
+/** Eksik sayfa hatalarını toplar, işe devam eder; diğer hataları olduğu gibi fırlatır */
+async function topluca<T>(eksikler: string[], is: () => Promise<T>): Promise<T | null> {
+  try { return await is(); }
+  catch (hata) {
+    if (hata instanceof EksikSayfa) { eksikler.push(...hata.yollar); return null; }
+    throw hata;
+  }
 }
 
 async function sayfaGetir(yol: string): Promise<CheerioAPI> {
@@ -103,17 +132,20 @@ function sezonBilgisi(adresler: string[]): { sezon: string; no: string } | null 
   return null;
 }
 
-async function aTakiminGrubunuBul(sezon: { sezon: string; no: string }): Promise<string | null> {
+async function aTakiminGrubunuBul(sezon: { sezon: string; no: string }, getir: Getirici): Promise<string | null> {
   const kok = `/puantaj-ve-fikstur/${sezon.sezon}/${A_TAKIM_LIGI.yol}/${sezon.no}/${A_TAKIM_LIGI.no}`;
-  const $tum = await sayfaGetir(`${kok}/0`);
+  const $tum = await getir(`${kok}/0`);
   const bizVar = $tum('.team-meta__name, .widget-results__team-name').toArray().some((e) => bizimTakimMi($tum(e).text()));
   const gruplar = grupListesi($tum);
   if (!bizVar || gruplar.length === 0) return null; // fikstür henüz yayınlanmamış
+  const eksikler: string[] = [];
   for (const g of gruplar) {
-    const $g = await sayfaGetir(`${kok}/${g.id}`);
+    const $g = await topluca(eksikler, () => getir(`${kok}/${g.id}`));
+    if (!$g) continue;
     const puan = grupSayfasiniAyristir($g).puan;
     if (puan.some((s) => bizimTakimMi(s.takim))) return `${kok}/${g.id}`;
   }
+  if (eksikler.length) throw new EksikSayfa(eksikler);
   return null;
 }
 
@@ -136,8 +168,10 @@ function durumBelirle(oz: TffMacOzeti, aktifHafta: number | null, onceki?: Mac):
 async function takimiGuncelle(
   takim: TakimKodu, yol: string, mevcut: Mac[],
   secenek: { tumSezon: boolean; detayLimiti: number },
+  getir: Getirici,
 ): Promise<TakimSonucu> {
-  const ana = grupSayfasiniAyristir(await sayfaGetir(yol));
+  const ana = grupSayfasiniAyristir(await getir(yol));
+  const eksikler: string[] = [];
   const lig = [duzgunAd(ana.lig), duzgunAd(ana.grup)].filter(Boolean).join(' · ');
 
   const ozetler = new Map<string, TffMacOzeti>();
@@ -150,12 +184,16 @@ async function takimiGuncelle(
     // Her hafta sayfası o haftayı ve bir sonrakini gösterir: 1, 3, 5... yeterli
     for (let h = 1; h <= ana.haftaSayisi; h += 2) {
       if (h === ana.aktifHafta) continue;
-      topla(grupSayfasiniAyristir(await sayfaGetir(`${yol}/${h}`)));
+      const $h = await topluca(eksikler, () => getir(`${yol}/${h}`));
+      if ($h) topla(grupSayfasiniAyristir($h));
     }
   } else if (ana.aktifHafta && ana.aktifHafta > 1) {
     // Geç girilen skorlar için bir önceki hafta
-    topla(grupSayfasiniAyristir(await sayfaGetir(`${yol}/${ana.aktifHafta - 1}`)));
+    const $h = await topluca(eksikler, () => getir(`${yol}/${ana.aktifHafta! - 1}`));
+    if ($h) topla(grupSayfasiniAyristir($h));
   }
+  // Bütün haftalar gelmeden birleştirme yapılmaz (yarım veri yazılmasın)
+  if (eksikler.length) throw new EksikSayfa(eksikler);
 
   // Maçları mevcut kayıtlarla birleştir (elle girilmiş aynı maç varsa ona bağlanır)
   const sonuc: Mac[] = [];
@@ -197,7 +235,9 @@ async function takimiGuncelle(
     .sort((a, b) => b.tarih.localeCompare(a.tarih))
     .slice(0, secenek.detayLimiti);
   for (const mac of detayBekleyen) {
-    const d = macSayfasiniAyristir(await sayfaGetir(mac.tffAdres!));
+    const $d = await topluca(eksikler, () => getir(mac.tffAdres!));
+    if (!$d) continue;
+    const d = macSayfasiniAyristir($d);
     const ad = (taraf: 'ev' | 'mis') => (taraf === 'ev' ? mac.ev_sahibi : mac.misafir);
     const toplamGol = (mac.ev_gol ?? 0) + (mac.mis_gol ?? 0);
     const olayVar = d.goller.length > 0 || d.kartlar.length > 0 || d.kadro.ev.length > 0;
@@ -212,6 +252,8 @@ async function takimiGuncelle(
     const eski = mac.tarih && bugunMs - new Date(mac.tarih).getTime() > 10 * 86400000;
     mac.detayAlindi = (olayVar && d.goller.length >= toplamGol) || !!eski;
   }
+
+  if (eksikler.length) throw new EksikSayfa(eksikler);
 
   const puan: PuanTablosu[] = ana.puan.map((s, i) => ({
     id: `tff-${takim}-${i + 1}`,
@@ -241,13 +283,22 @@ export interface SenkronSecenekleri {
   takim?: TakimKodu;
   /** Sezonun bütün haftalarını yeniden çek */
   tumSezon?: boolean;
+  /** Sayfaların nereden okunacağı (varsayılan: doğrudan TFF) */
+  getirici?: Getirici;
+  /** Durum kaydında görünecek kaynak */
+  kaynak?: TffTakimDurumu['kaynak'];
 }
 
-export async function tffSenkronla(secenek: SenkronSecenekleri = {}): Promise<TffDurum> {
+export type SenkronSonucu = TffDurum & { eksik?: string[] };
+
+export async function tffSenkronla(secenek: SenkronSecenekleri = {}): Promise<SenkronSonucu> {
+  const getir = secenek.getirici ?? sayfaGetir;
   const kaynaklar = await getTffKaynaklari();
   const durum = await getTffDurum();
   const anlik = await getMaclar();
   const guncellenen: Mac[] = [];
+  const bekleyenPuan: [TakimKodu, PuanTablosu[]][] = [];
+  const eksik: string[] = [];
 
   // A takım en sona: grubunu bulmak için diğer takımların sezon bilgisi kullanılır
   const sira: TakimKodu[] = secenek.takim ? [secenek.takim] : ['u17', 'u14', 'a'];
@@ -258,13 +309,13 @@ export async function tffSenkronla(secenek: SenkronSecenekleri = {}): Promise<Tf
       if (kaynak?.adres && !yol) throw new Error('Kayıtlı TFF adresi bir grup sayfası değil. Panelden düzeltin.');
       if (!yol && takim === 'a') {
         const sezon = sezonBilgisi(kaynaklar.map((k) => k.adres));
-        yol = sezon ? await aTakiminGrubunuBul(sezon) : null;
+        yol = sezon ? await aTakiminGrubunuBul(sezon, getir) : null;
         if (yol && kaynak) {
           kaynak.adres = yol;
           await saveTffKaynaklari(kaynaklar);
         }
         if (!yol) {
-          durum.takimlar.a = { zaman: simdi(), basarili: true, mesaj: 'A takım fikstürü TFF\'de henüz yayınlanmamış. Yayınlanınca kendiliğinden bulunacak.' };
+          durum.takimlar.a = { zaman: simdi(), basarili: true, kaynak: secenek.kaynak, mesaj: 'A takım fikstürü TFF\'de henüz yayınlanmamış. Yayınlanınca kendiliğinden bulunacak.' };
           continue;
         }
       }
@@ -274,19 +325,26 @@ export async function tffSenkronla(secenek: SenkronSecenekleri = {}): Promise<Tf
       }
       const ilkKez = !durum.takimlar[takim]?.tumSezonAlindi;
       const tumSezon = !!secenek.tumSezon || ilkKez;
-      const sonuc = await takimiGuncelle(takim, yol, anlik, { tumSezon, detayLimiti: tumSezon ? 30 : 4 });
-      if (sonuc.puan.length) await savePuanTablosu(sonuc.puan, takim);
+      const sonuc = await takimiGuncelle(takim, yol, anlik, { tumSezon, detayLimiti: tumSezon ? 30 : 4 }, getir);
+      if (sonuc.puan.length) bekleyenPuan.push([takim, sonuc.puan]);
       guncellenen.push(...sonuc.maclar);
-      durum.takimlar[takim] = sonuc.durum;
+      durum.takimlar[takim] = { ...sonuc.durum, kaynak: secenek.kaynak };
     } catch (hata) {
+      if (hata instanceof EksikSayfa) { eksik.push(...hata.yollar); continue; }
       durum.takimlar[takim] = {
         ...durum.takimlar[takim],
         zaman: simdi(),
         basarili: false,
+        kaynak: secenek.kaynak,
         mesaj: hata instanceof Error ? hata.message : String(hata),
       };
     }
   }
+
+  // Köprü henüz bütün sayfaları göndermediyse hiçbir şey yazılmaz; eksikler istenir
+  if (eksik.length) return { ...durum, eksik: [...new Set(eksik)] };
+
+  for (const [takim, puan] of bekleyenPuan) await savePuanTablosu(puan, takim);
 
   if (guncellenen.length) {
     // Bu arada panelden yapılmış değişiklikleri ezmemek için güncel listeye işle

@@ -117,6 +117,8 @@ export interface TffTakimDurumu {
   macSayisi?: number;
   takimSayisi?: number;
   tumSezonAlindi?: boolean;
+  /** Verinin geldiği yer: sunucunun kendisi ya da bilgisayardaki program */
+  kaynak?: 'sunucu' | 'bilgisayar';
 }
 
 export interface TffDurum {

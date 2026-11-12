@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { tffSenkronla } from '@/lib/tff/senkron';
+import { getTffKopruAnahtari } from '@/lib/data';
 
 // cron-job.org bu adresi çağırır (günde 2 kez: 08:00 ve 20:00).
 // Güncelleme 30-60 saniye sürebildiği için yanıt hemen döner, iş arka planda tamamlanır.
@@ -10,6 +11,11 @@ export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret');
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+  }
+
+  // TFF sunucumuzu engellediği için güncelleme bilgisayardaki programla yapılıyor; sunucu denemesi atlanır
+  if (await getTffKopruAnahtari()) {
+    return NextResponse.json({ atlandi: true, neden: 'Güncelleme bilgisayardaki TFF programıyla yapılıyor.' });
   }
 
   after(async () => {
