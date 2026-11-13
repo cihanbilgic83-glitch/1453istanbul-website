@@ -41,6 +41,7 @@ export default function Navbar() {
   const dolu = kaydirildi || acik;
 
   return (
+    <>
     <nav className={`fixed top-0 inset-x-0 z-50 transition-colors duration-300 ${dolu ? 'bg-gece/95 backdrop-blur shadow-lg shadow-black/20' : 'bg-transparent'}`}>
       <div className={`max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 flex items-center justify-between transition-[height] duration-300 ${dolu ? 'h-[72px]' : 'h-[88px]'} border-b ${dolu ? 'border-transparent' : 'border-mat/30'}`}>
         <Link href="/" className="flex items-center gap-3" aria-label="1453 İstanbul AS anasayfa">
@@ -65,7 +66,7 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <button type="button" onClick={() => setAcik((a) => !a)} aria-label={acik ? 'Menüyü kapat' : 'Menüyü aç'} aria-expanded={acik}
+        <button type="button" onClick={() => setAcik((a) => !a)} aria-label={acik ? 'Menüyü kapat' : 'Menüyü aç'} aria-expanded={acik} aria-controls="mobil-menu"
           className="lg:hidden w-11 h-11 border border-krem/50 flex flex-col items-center justify-center gap-[5px]">
           <span className={`block w-[18px] h-0.5 bg-white transition-transform ${acik ? 'translate-y-[7px] rotate-45' : ''}`} />
           <span className={`block w-[18px] h-0.5 bg-white transition-opacity ${acik ? 'opacity-0' : ''}`} />
@@ -73,8 +74,12 @@ export default function Navbar() {
         </button>
       </div>
 
+    </nav>
+
+      {/* Mobil menü çubuğun DIŞINDA durur: çubuktaki backdrop-blur, içindeki sabit konumlu
+          öğeleri çubuğun 72px yüksekliğine hapsettiği için menü görünmüyordu. */}
       {acik && (
-        <div className="lg:hidden fixed inset-x-0 top-[72px] bottom-0 bg-gece overflow-y-auto">
+        <div id="mobil-menu" className="lg:hidden fixed inset-x-0 top-[72px] bottom-0 z-50 bg-gece overflow-y-auto">
           <div className="px-5 py-6 flex flex-col">
             {baglantilar.map((b) => (
               <Link key={b.href} href={b.href}
@@ -86,6 +91,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 }

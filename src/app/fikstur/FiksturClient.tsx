@@ -207,18 +207,18 @@ export default function FiksturClient({ takim, sekmeler, maclar, puanTablosu, se
             <div className="mt-5 bg-white border border-cizgi px-5 py-6 text-sm text-kursun">Puan tablosu lig başladığında burada yer alacak.</div>
           ) : (
           <div className="mt-5 bg-white border border-cizgi overflow-x-auto">
-            <table className="w-full text-sm rakam">
+            <table className="w-full text-[13px] sm:text-sm rakam">
               <caption className="sr-only">Puan durumu</caption>
               <thead>
                 <tr className="bg-gece text-krem text-xs">
-                  <th scope="col" className="text-left px-3 py-3 font-semibold">#</th>
-                  <th scope="col" className="text-left px-2 py-3 font-semibold">Takım</th>
-                  <th scope="col" className="px-1.5 py-3 font-semibold" title="Oynanan">O</th>
-                  <th scope="col" className="px-1.5 py-3 font-semibold" title="Galibiyet">G</th>
-                  <th scope="col" className="px-1.5 py-3 font-semibold" title="Beraberlik">B</th>
-                  <th scope="col" className="px-1.5 py-3 font-semibold" title="Mağlubiyet">M</th>
-                  <th scope="col" className="px-1.5 py-3 font-semibold" title="Averaj">Av</th>
-                  <th scope="col" className="px-3 py-3 font-semibold text-mat" title="Puan">P</th>
+                  <th scope="col" className="text-left pl-2.5 pr-1 sm:px-3 py-3 font-semibold">#</th>
+                  <th scope="col" className="text-left px-1.5 sm:px-2 py-3 font-semibold">Takım</th>
+                  <th scope="col" className="px-1 sm:px-1.5 py-3 font-semibold" title="Oynanan">O</th>
+                  <th scope="col" className="px-1 sm:px-1.5 py-3 font-semibold" title="Galibiyet">G</th>
+                  <th scope="col" className="px-1 sm:px-1.5 py-3 font-semibold" title="Beraberlik">B</th>
+                  <th scope="col" className="px-1 sm:px-1.5 py-3 font-semibold" title="Mağlubiyet">M</th>
+                  <th scope="col" className="px-1 sm:px-1.5 py-3 font-semibold" title="Averaj">Av</th>
+                  <th scope="col" className="pl-1.5 pr-2.5 sm:px-3 py-3 font-semibold text-mat" title="Puan">P</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,14 +226,14 @@ export default function FiksturClient({ takim, sekmeler, maclar, puanTablosu, se
                   const biz = bizimTakimMi(t.takim);
                   return (
                     <tr key={t.id} className={`border-b border-cizgi/70 ${biz ? 'bg-mat/15 font-semibold' : ''}`}>
-                      <td className={`px-3 py-2.5 ${biz ? 'border-l-2 border-mat text-zumrut' : 'text-kursun'}`}>{i + 1}</td>
-                      <td className="px-2 py-2.5 text-murekkep">{t.takim}</td>
-                      <td className="px-1.5 py-2.5 text-center text-kursun">{t.o}</td>
-                      <td className="px-1.5 py-2.5 text-center">{t.g}</td>
-                      <td className="px-1.5 py-2.5 text-center">{t.b}</td>
-                      <td className="px-1.5 py-2.5 text-center">{t.m}</td>
-                      <td className="px-1.5 py-2.5 text-center text-kursun">{t.av > 0 ? `+${t.av}` : t.av}</td>
-                      <td className="px-3 py-2.5 text-center font-bold text-zumrut">{t.puan}</td>
+                      <td className={`pl-2.5 pr-1 sm:px-3 py-2.5 ${biz ? 'border-l-2 border-mat text-zumrut' : 'text-kursun'}`}>{i + 1}</td>
+                      <td className="px-1.5 sm:px-2 py-2.5 text-murekkep leading-snug [overflow-wrap:anywhere]">{t.takim}</td>
+                      <td className="px-1 sm:px-1.5 py-2.5 text-center text-kursun">{t.o}</td>
+                      <td className="px-1 sm:px-1.5 py-2.5 text-center">{t.g}</td>
+                      <td className="px-1 sm:px-1.5 py-2.5 text-center">{t.b}</td>
+                      <td className="px-1 sm:px-1.5 py-2.5 text-center">{t.m}</td>
+                      <td className="px-1 sm:px-1.5 py-2.5 text-center text-kursun">{t.av > 0 ? `+${t.av}` : t.av}</td>
+                      <td className="pl-1.5 pr-2.5 sm:px-3 py-2.5 text-center font-bold text-zumrut">{t.puan}</td>
                     </tr>
                   );
                 })}
