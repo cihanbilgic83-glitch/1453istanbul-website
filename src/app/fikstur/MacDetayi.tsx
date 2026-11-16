@@ -3,7 +3,7 @@
 // Fikstürde bir maça tıklanınca açılan detay: skor tabelası, maç akışı (zaman çizgisi) ve kadrolar.
 // Telefonda "Maç akışı" ve "Kadrolar" sekmelerle, kadrolar da takım düğmesiyle değişir; masaüstünde hepsi görünür.
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { Mac, KadroOyuncu } from '@/lib/types';
 import { bizimTakimMi } from '@/lib/takim';
 
@@ -107,9 +107,12 @@ export default function MacDetayi({ mac }: { mac: Mac }) {
         <div style={{ '--uzun': enUzun } as React.CSSProperties}
           className={`font-baslik font-extrabold uppercase text-[min(17px,calc(100cqi/(var(--uzun)*0.5)))] sm:text-[min(28px,calc(100cqi/(var(--uzun)*0.5)))] leading-none max-w-full [overflow-wrap:anywhere] ${bizTaraf === t ? 'text-mat' : 'text-white'}`}>{ad}</div>
         {golculer(t).map((g) => (
-          <div key={g.ad} className={`flex items-center gap-1.5 text-[11.5px] sm:text-[13px] text-krem ${t === 'ev' ? 'flex-row-reverse' : ''}`}>
+          <div key={g.ad} className={`flex items-center gap-1.5 max-w-full text-[11.5px] sm:text-[13px] text-krem ${t === 'ev' ? 'flex-row-reverse' : ''}`}>
             <span className="text-murekkep"><TopIkonu className="w-3.5 h-3.5" /></span>
-            <span>{g.ad} <span className="text-krem/60 whitespace-nowrap rakam">{g.dk.map((d) => `${d}'`).join(', ')}</span></span>
+            {/* Çok gol atan oyuncuda dakikalar aralardan alt satıra geçebilir; tek dakika bölünmez */}
+            <span className="min-w-0">{g.ad}{' '}<span className="text-krem/60 rakam">{g.dk.map((d, i) => (
+              <Fragment key={i}><span className="whitespace-nowrap">{d}&apos;{i < g.dk.length - 1 ? ',' : ''}</span>{i < g.dk.length - 1 ? ' ' : ''}</Fragment>
+            ))}</span></span>
           </div>
         ))}
       </div>
