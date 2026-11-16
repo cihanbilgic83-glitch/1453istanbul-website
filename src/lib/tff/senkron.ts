@@ -239,12 +239,15 @@ async function takimiGuncelle(
     if (!$d) continue;
     const d = macSayfasiniAyristir($d);
     const ad = (taraf: 'ev' | 'mis') => (taraf === 'ev' ? mac.ev_sahibi : mac.misafir);
+    // TFF zaman çizgisinde olay bazen yanlış tarafta duruyor; oyuncu hangi kadrodaysa o takıma yazılır
+    const taraf = (oyuncu: string, varsayilan: 'ev' | 'mis'): 'ev' | 'mis' =>
+      d.kadro.ev.some((o) => o.ad === oyuncu) ? 'ev' : d.kadro.mis.some((o) => o.ad === oyuncu) ? 'mis' : varsayilan;
     const toplamGol = (mac.ev_gol ?? 0) + (mac.mis_gol ?? 0);
     const olayVar = d.goller.length > 0 || d.kartlar.length > 0 || d.kadro.ev.length > 0;
     if (olayVar) {
-      mac.goller = d.goller.map((g) => ({ oyuncu: g.oyuncu, dakika: g.dakika, takim: ad(g.taraf) }));
-      mac.kartlar = d.kartlar.map((k) => ({ oyuncu: k.oyuncu, dakika: k.dakika, takim: ad(k.taraf), tur: k.tur }));
-      mac.degisiklikler = d.degisiklikler.map((x) => ({ giren: x.giren, cikan: x.cikan, dakika: x.dakika, takim: ad(x.taraf) }));
+      mac.goller = d.goller.map((g) => ({ oyuncu: g.oyuncu, dakika: g.dakika, takim: ad(taraf(g.oyuncu, g.taraf)) }));
+      mac.kartlar = d.kartlar.map((k) => ({ oyuncu: k.oyuncu, dakika: k.dakika, takim: ad(taraf(k.oyuncu, k.taraf)), tur: k.tur }));
+      mac.degisiklikler = d.degisiklikler.map((x) => ({ giren: x.giren, cikan: x.cikan, dakika: x.dakika, takim: ad(taraf(x.giren, x.taraf)) }));
       mac.kadro = d.kadro;
     }
     if (d.hakem) mac.hakem = d.hakem;
